@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, VT323, Cormorant } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -11,6 +11,17 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+const vt323 = VT323({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-vt323",
+})
+
+const cormorant = Cormorant({
+  subsets: ["latin"],
+  variable: "--font-cormorant",
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,7 +31,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable, vt323.variable, cormorant.variable)}
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>

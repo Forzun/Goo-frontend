@@ -1,55 +1,36 @@
-import { Switch } from "../components/ui/switch"
 import bg from "@/assets/bg-mountain.jpg"
+import Navbar from "@/components/landing/navbar"
+import { Earth, ZodiacAquarius } from "lucide-react"
 
-const pixel = { fontFamily: "VT323, monospace" } as const
-const serif = { fontFamily: "Cormorant, serif" } as const
+export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
+export const serif = { fontFamily: "var(--font-cormorant), serif" } as const
 
 export default function Page() {
   return (
     <div
-      className="min-h-screen w-full bg-cover bg-center bg-no-repeat text-white"
+      className="relative z-0 min-h-screen w-full bg-cover bg-center bg-no-repeat text-white"
       style={{ backgroundImage: `url(${bg.src})`, ...pixel, fontSize: "13px" }}
     >
-      <nav
-        className="flex items-center justify-between px-8 py-5"
-        style={{ ...pixel, fontSize: "13px" }}
-      >
-        <div className="flex items-center gap-8">
-          <a href="#" className="flex items-center gap-2 font-semibold">
-            <span style={{ color: "#FF8D52" }}>✳</span>
-            <span>Own It</span>
-          </a>
-          <a href="#" className="opacity-90 hover:opacity-100">
-            Pricing
-          </a>
-          <a href="#" className="opacity-90 hover:opacity-100">
-            Affiliate Program
-          </a>
-        </div>
-        <div className="flex items-center gap-5">
-          <a href="#" className="opacity-90 hover:opacity-100">
-            Try the demo
-          </a>
-          <a
-            href="#"
-            className="rounded-full bg-black/70 px-4 py-2 text-white hover:bg-black"
-            style={{ ...pixel, fontSize: "13px" }}
-          >
-            Sign in
-          </a>
-        </div>
-      </nav>
+      {/* Top Banner Gradient from Figma */}
 
+      <div
+        className="pointer-events-none absolute top-0 left-1/2 -z-10 h-[375px] w-full -translate-x-1/2"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(56, 23, 12, 0.7), rgba(91, 37, 19, 0.35), rgba(92, 37, 19, 0))",
+        }}
+      />
+
+      <Navbar />
       {/* Hero */}
       <main className="flex flex-col items-center px-4 pt-16 pb-24">
         <h1
-          className="text-center leading-[1.05]"
+          className="text-center leading-[0.8] tracking-tighter"
           style={{
             ...serif,
-            fontSize: "42px",
+            fontSize: "48px",
             fontWeight: 700,
             color: "#FFF7E8",
-            letterSpacing: "0.02em",
           }}
         >
           Stop Renting AI.
@@ -58,13 +39,13 @@ export default function Page() {
         </h1>
         <p
           className="mt-5 text-center text-white/90"
-          style={{ ...pixel, fontSize: "13px" }}
+          style={{ ...pixel, fontSize: "18px" }}
         >
-          Think, plan and build with models that live on your machine.
+          Run local models with Ollama and code without burning API credits.
         </p>
 
         {/* Mac terminal window */}
-        <div className="mt-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#0f0f10] shadow-2xl">
+        <div className="mt-8 w-full max-w-xl overflow-hidden rounded border border-white/10 bg-[#0f0f10] shadow-2xl">
           {/* Title bar with tab + traffic lights */}
           <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5">
             <span
@@ -82,15 +63,16 @@ export default function Page() {
           {/* Body */}
           <div className="px-6 pt-6 pb-8">
             <div className="flex items-start gap-5">
-              <pre
-                className="leading-[0.9]"
-                style={{ ...pixel, fontSize: "42px", color: "#FF8D52" }}
+              <span
+                style={{
+                  ...pixel,
+                  fontSize: "90px",
+                  color: "#FF8D52",
+                  lineHeight: 1,
+                }}
               >
-                {` __  
-/ _\\ 
-\\__ \\
-|___/`}
-              </pre>
+                G
+              </span>
               <div className="pt-1">
                 <div style={{ ...pixel, fontSize: "18px" }}>
                   <span style={{ color: "#FF8D52" }}>Goo CLI</span>
@@ -113,7 +95,7 @@ export default function Page() {
               </div>
             </div>
             <div
-              className="mt-6 flex items-center gap-4"
+              className="mt-2 flex items-center gap-4"
               style={{ ...pixel, fontSize: "15px", color: "#FF8D52" }}
             >
               <span>? Select a model</span>
@@ -127,73 +109,20 @@ export default function Page() {
               </span>
             </div>
           </div>
-          {/* Footer bar */}
-          <div className="flex items-center justify-between border-t border-white/5 bg-[#141416] px-4 py-2.5">
-            <div className="flex items-center gap-2 text-white/80">
-              <span
-                className="rounded-md bg-[#FF8D52] px-2 py-1 text-black"
-                style={{ ...pixel, fontSize: "13px" }}
-              >
-                Vibe
-              </span>
-              <span
-                className="rounded-md bg-white/10 px-2 py-1"
-                style={{ ...pixel, fontSize: "13px" }}
-              >
-                Spec
-              </span>
-              <span
-                className="pl-1 opacity-80"
-                style={{ ...pixel, fontSize: "13px" }}
-              >
-                AA Opus 4.6
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-white/80">
-              <div className="flex items-center gap-2">
-                <Switch
-                  defaultChecked
-                  className="h-4 w-7 data-[state=checked]:bg-[#FF8D52] data-[state=unchecked]:bg-white/20 [&>span]:h-3 [&>span]:w-3 [&>span]:bg-white [&>span[data-state=checked]]:translate-x-3"
-                />
-                <span style={{ ...pixel, fontSize: "13px" }}>Clone</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-3.5 w-3.5"
-                  fill="currentColor"
-                  aria-label="Public"
-                >
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-                </svg>
-                <span style={{ ...pixel, fontSize: "13px" }}>Public</span>
-              </div>
-              <button className="flex h-7 w-7 items-center justify-center rounded-md bg-[#FF8D52] text-black">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="currentColor"
-                  aria-label="Upload"
-                >
-                  <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-                </svg>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Badge */}
-        <div className="mt-8 flex items-center gap-3 rounded-full bg-black/70 px-4 py-2">
-          <span className="h-5 w-5 rounded-full bg-[#FF8D52]" />
+        <div className="mt-8 flex items-center gap-3 rounded-sm bg-zinc-900/90 px-4 py-2">
+          <ZodiacAquarius className="h-5 w-5 text-[#FF8D52]" />
           <div className="leading-tight">
             <div
               className="text-white/60"
               style={{ ...pixel, fontSize: "10px", letterSpacing: "0.1em" }}
             >
-              PRODUCT HUNT
+              Open Source.
             </div>
             <div className="text-white" style={{ ...pixel, fontSize: "13px" }}>
-              #3 Product of the Day
+              Self-Hosted. Yours Forever.
             </div>
           </div>
         </div>

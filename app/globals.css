@@ -127,3 +127,12 @@
     @apply font-sans;
     }
 }
+
+/* Hide scrollbar */
+* {
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}

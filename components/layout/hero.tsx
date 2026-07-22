@@ -1,5 +1,5 @@
-import serif from "@/app/page"
-import pixel from "@/app/page"
+import { pixel, serif } from "@/app/page"
+
 import { ZodiacAquarius } from "lucide-react"
 
 export default function HeroSection() {

@@ -50,12 +50,6 @@ export default function Navbar() {
           ))}
         </div>
         <div className="flex items-center gap-5">
-          {/* <a
-            href="https://x.com/ForZun_/status/2079052568697991390"
-            className="opacity-80 transition-opacity hover:opacity-100"
-          >
-            Try the demo
-          </a> */}
           <a
             href="https://drive.google.com/file/d/1_TsTRvLSO1phmD0WINaiWHhu9jgoaHI5/view?usp=sharing"
             className="rounded-full border border-white/10 bg-black/60 px-5 py-2 text-white backdrop-blur-sm transition-colors hover:bg-black/80"

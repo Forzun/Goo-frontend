@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150.6 74">
+  <style type="text/css">
+    .cls-0 {fill:#FB8B50;}
+    .cls-1 {opacity:6.000000e-02;}
+  </style>
+  
+  <!-- G -->
+  <path class="cls-0" d="m46.4 10.5v-10.5h-27.4v10.5h-5.7v10.6h-5.6v31.1 4.6h5.7v6.2h5.6v10.6h27.8l0.9-0.1v-10.4h4.5v-31.7h-20.4v10.9h-0.1v0.3h7.7v19.6h-13.8v-10.6h-5.8v-29.2h5.8v-11h14v10.7h12.6v-11.6"/>
+  
+  <!-- oo — shifted right by 18 units -->
+  <g class="cls-1" transform="translate(18, 0)">
+    <svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#d4d4d8" d="m91.8 32.1v-10.6h-24.5v10.5h-5.5v31h5.5v10.6h24.6v-10.6h5.6v-31l-5.7 0.1zm-6.5 30.1h-11.7v-29.5h11.7v29.5z"/>
+      <path fill="#d4d4d8" d="m137.5 32v-10.5h-25.2v10.5h-5.7v31h6v11h25v-11h5.5v-31h-5.6zm-6.2 30.2h-12.5v-29.5h12.5v29.5z"/>
+    </svg>
+  </g>
+</svg>

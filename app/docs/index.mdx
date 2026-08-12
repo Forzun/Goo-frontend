@@ -1,7 +1,75 @@
 ---
-title: Hello World
+title: Quick start 
 ---
 
-## Introduction
+<div align="center">
 
-I love Anime.
+![Image Description](/docs/GooIcon.svg)
+
+</div>
+
+# Goo
+
+> A local-first, open-source AI coding assistant for your terminal — powered by Ollama, with file-aware conversations, code editing, and persistent memory you actually own.
+
+GooGo is an experimental AI coding assistant that runs directly in your terminal and works with local language models through Ollama.
+
+The goal is simple: build a coding assistant that can understand your project, read and modify code, remember useful context across conversations, and keep that memory transparent and accessible to you.
+
+Unlike memory systems hidden inside a database, GooGo uses a local Markdown vault as its source of truth. Your memories remain readable, editable, and portable — and can be explored visually using Obsidian.
+
+> **Note:** GooGo is currently under active development. APIs, commands, and features may change.
+
+---
+
+## Features
+
+* Chat with local Ollama models directly from your terminal
+* Built with Bun and TypeScript
+* Streaming AI responses
+* Reference project files using `@filename`
+* File search and autocomplete
+* AI-powered function editing
+* Function creation and modification
+* Function renaming
+* Function deletion
+* Code diff previews
+* Persistent long-term memory
+* SQLite-powered vector index
+* Markdown-based memory vault
+* Obsidian-compatible memory storage
+* Explore memories using Obsidian Graph View
+* Syntax-highlighted code output
+* Local conversation history
+
+---
+
+# How GooGo Works
+
+At a high level:
+
+<div align="center">
+
+![Image Description](/docs/structure.png)
+
+</div>
+
+{/* Diagram: You → GooGo CLI → Project Files / Coding Tools / Memory System → Ollama → Local LLM */}
+
+GooGo uses the Ollama API to communicate with models running locally on your machine.
+
+Your code stays on your machine unless you explicitly configure GooGo to use an external service in the future.
+
+---
+
+# Requirements
+
+Before installing GooGo, make sure you have:
+
+* Git
+* Bun
+* Ollama
+* At least one Ollama chat/coding model
+* An embedding model for memory
+
+Obsidian is optional, but recommended if you want to browse and visualize GooGo's memory vault.

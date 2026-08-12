@@ -40,8 +40,9 @@ export default function RootLayout({
         cormorant.variable
       )}
     >
-      <body className="flex min-h-screen flex-col"  suppressHydrationWarning>
-        <RootProvider theme={{enabled: false}}>{children}</RootProvider>
+      <body   suppressHydrationWarning>
+        <RootProvider
+        theme={{enabled: true}}>{children}</RootProvider>
       </body>
     </html>
   )

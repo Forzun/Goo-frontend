@@ -42,7 +42,7 @@ export default function RootLayout({
     >
       <body   suppressHydrationWarning>
         <RootProvider
-        theme={{enabled: true}}>{children}</RootProvider>
+        >{children}</RootProvider>
       </body>
     </html>
   )

@@ -9,7 +9,7 @@ interface NavItem {
 const navbar: NavItem[] = [
   {
     label: "Docs",
-    href: "https://github.com/forzun/googo",
+    href: "http://localhost:3000/docs/manual/manual-instation",
   },
   {
     label: "Models",
@@ -55,7 +55,7 @@ export default function Navbar() {
             className="rounded-full border border-white/10 bg-black/60 px-5 py-2 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
             style={{ ...pixel, fontSize: "14px" }}
           >
-            Try out
+            Demo
           </a>
         </div>
       </nav>

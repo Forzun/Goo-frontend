@@ -1,7 +1,9 @@
+import { ChatAppExample } from "@/components/local/agents/chat-app-usage";
+
 export default function Page() {
   return (
-    <div className="bg-sidebar-bg text-sidebar-secondary text-fs-sidebar">
-      My Kimi
+    <div className="h-full w-full">
+      <ChatAppExample />
     </div>
   )
 }

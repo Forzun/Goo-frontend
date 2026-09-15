@@ -12,12 +12,12 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AgentDisclosure } from "@/components/agents/agent-disclosure";
-import { ActionSwapRollText } from "@/components/motion/action-swap-roll";
-import { Button } from "@/components/motion/button";
-import { Checkbox } from "@/components/motion/checkbox";
-import { Input } from "@/components/motion/input";
-import { RadioGroup, RadioGroupItem } from "@/components/motion/radio";
+import { AgentDisclosure } from "@/components/local/agents/agent-disclosure";
+import { ActionSwapRollText } from "@/components/local/motion/action-swap-roll";
+import { Button } from "@/components/local/motion/button";
+import { Checkbox } from "@/components/local/motion/checkbox";
+import { Input } from "@/components/local/motion/input";
+import { RadioGroup, RadioGroupItem } from "@/components/local/motion/radio";
 import { EASE_OUT, SPRING_SWAP } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 import type {

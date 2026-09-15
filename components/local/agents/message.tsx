@@ -10,16 +10,16 @@ import {
 } from "react";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
-import { MessageSideContext } from "@/components/agents/message-context";
+import { MessageSideContext } from "@/components/local/agents/message-context";
 
 export {
   MessageBubble,
   MessageBubbleCollapsible,
   MessageBubbleContent,
   MessageBubbleGroup,
-} from "@/components/agents/message-bubble";
-export { MessageScroller } from "@/components/agents/message-scroller";
-export type { MessageScrollerProps } from "@/components/agents/message-scroller";
+} from "@/components/local/agents/message-bubble";
+export { MessageScroller } from "@/components/local/agents/message-scroller";
+export type { MessageScrollerProps } from "@/components/local/agents/message-scroller";
 
 export type MessageFrom = "user" | "assistant";
 

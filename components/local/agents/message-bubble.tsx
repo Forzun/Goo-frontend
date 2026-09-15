@@ -25,7 +25,7 @@ import {
   SPRING_SWAP,
 } from "@/lib/ease";
 import { cn } from "@/lib/utils";
-import { MessageSideContext } from "@/components/agents/message-context";
+import { MessageSideContext } from "@/components/local/agents/message-context";
 
 export type MessageBubbleVariant =
   | "solid"

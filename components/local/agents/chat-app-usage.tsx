@@ -339,7 +339,7 @@ export function ChatAppExample({
   const busy = pending || activeReply !== null;
 
   return (
-    <ChatApp sidebarWidth="17rem" className={cn("h-[760px]", className)}>
+    <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
       <AnimatedSidebar
         ariaLabel="Agent workspace"
         collapsible="offcanvas"

@@ -12,8 +12,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { ActionSwapRollText } from "@/components/motion/action-swap-roll";
-import { AgentDisclosure } from "@/components/agents/agent-disclosure";
+import { ActionSwapRollText } from "@/components/local/motion/action-swap-roll";
+import { AgentDisclosure } from "@/components/local/agents/agent-disclosure";
 import {
   EASE_OUT,
   SPRING_LAYOUT,

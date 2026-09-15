@@ -16,7 +16,7 @@ import {
   type AgentCodeLanguage,
   AgentCodeLine,
   useAgentCodeTokens,
-} from "@/components/agents/agent-code";
+} from "@/components/local/agents/agent-code";
 import { SPRING_PRESS } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 

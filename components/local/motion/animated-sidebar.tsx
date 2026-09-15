@@ -24,7 +24,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
-import { SharedLayoutBg } from "@/components/motion/shared-layout-bg";
+import { SharedLayoutBg } from "@/components/local/motion/shared-layout-bg";
 import {
   EASE_DRAWER,
   EASE_OUT,

@@ -22,8 +22,8 @@ import {
   type CitationItem,
   CitationList,
   CitationStack,
-} from "@/components/agents/citations";
-import { AgentDisclosure } from "@/components/agents/agent-disclosure";
+} from "@/components/local/agents/citations";
+import { AgentDisclosure } from "@/components/local/agents/agent-disclosure";
 import { EASE_OUT, SPRING_PRESS, SPRING_SWAP } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 

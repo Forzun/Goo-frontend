@@ -8,9 +8,9 @@ import {
   useId,
   useState,
 } from "react";
-import { AgentDisclosure } from "@/components/agents/agent-disclosure";
+import { AgentDisclosure } from "@/components/local/agents/agent-disclosure";
 import { EASE_OUT, SPRING_LAYOUT, SPRING_SWAP } from "@/lib/ease";
-import { useFavicon } from "@/lib/hooks/use-favicon";
+import { useFavicon } from "@/hooks/use-favicon";
 import { cn } from "@/lib/utils";
 
 export interface CitationItem {

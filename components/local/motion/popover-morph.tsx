@@ -17,7 +17,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { usePopoverPortalPosition } from "@/components/motion/popover-position";
+import { usePopoverPortalPosition } from "@/components/local/motion/popover-position";
 import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 

@@ -1,6 +1,6 @@
 // beui.dev/components/agents/chat-app
 import type { ReactNode } from "react";
-import { TextShimmer } from "@/components/motion/text-shimmer";
+import { TextShimmer } from "@/components/local/motion/text-shimmer";
 import { cn } from "@/lib/utils";
 
 export interface ThinkingShimmerProps {

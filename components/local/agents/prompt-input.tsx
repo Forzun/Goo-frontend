@@ -14,18 +14,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { Button } from "@/components/motion/button";
+import { Button } from "@/components/local/motion/button";
 import {
   MorphPopover,
   MorphPopoverContent,
   MorphPopoverTrigger,
-} from "@/components/motion/popover-morph";
+} from "@/components/local/motion/popover-morph";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from "@/components/motion/select";
+} from "@/components/local/motion/select";
 import { SPRING_SWAP } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 

@@ -168,7 +168,7 @@ export function PromptInput({
     <form
       onSubmit={submit}
       className={cn(
-        "relative w-full rounded-2xl border border-border/80 bg-background p-2 transition-colors focus-within:border-foreground/25",
+        "relative w-full rounded-2xl border border-border/80 bg-background p-2 transition-colors focus-within:border-zinc-600/40 focus-within:inset-shadow-zinc-600/30",
         disabled && "opacity-60",
         className,
       )}
@@ -193,7 +193,7 @@ export function PromptInput({
         className="scrollbar-hide block w-full resize-none overflow-y-auto bg-transparent px-2 pt-1.5 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/55"
       />
 
-      <div className="mt-1 flex min-h-8 items-center gap-1">
+      <div className="mt-1 flex min-h-16 items-end gap-1 ">
         {actions.length ? (
           <MorphPopover open={actionsOpen} onOpenChange={setActionsOpen}>
             <MorphPopoverTrigger>

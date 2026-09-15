@@ -344,7 +344,7 @@ export function ChatAppExample({
         ariaLabel="Agent workspace"
         collapsible="offcanvas"
         className="min-h-0"
-        panelClassName="h-full bg-background"
+        panelClassName="h-full bg-sidebar text-secondary text-nav"
       >
         <AnimatedSidebarContent className="gap-4 overflow-hidden px-2 py-4">
           <AnimatedSidebarGroup className="shrink-0 px-1 py-0">
@@ -390,8 +390,9 @@ export function ChatAppExample({
         <AnimatedSidebarRail />
       </AnimatedSidebar>
 
-      <AnimatedSidebarInset className="min-h-0 bg-background">
-        <header className="flex h-14 shrink-0 items-center justify-between border-border border-b px-4">
+      <AnimatedSidebarInset className="min-h-0 bg-main-bg text-text-primary text-body">
+        
+        {/* <header className="flex h-14 shrink-0 items-center justify-between border-border border-b px-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
               <PanelLeft className="size-4" />
@@ -408,7 +409,7 @@ export function ChatAppExample({
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
             Connected
           </span>
-        </header>
+        </header> */}
 
         <MessageScroller
           busy={busy}
@@ -658,9 +659,10 @@ export function ChatAppExample({
           </MessageGroup>
         </MessageScroller>
 
-        <div className="shrink-0 border-border border-t bg-background p-3">
+        <div className="shrink-0 pb-3 ">
           <div className="mx-auto max-w-3xl">
             <PromptInput
+              className="bg-input-bg border border-edge text-placeholder text-body "
               value={input}
               onValueChange={setInput}
               loading={busy}

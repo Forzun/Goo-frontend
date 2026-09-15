@@ -47,6 +47,40 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-edge: #2f2f2f;
+    
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-main-bg: var(--main-bg);
+  --color-input-bg: var(--input-bg);
+  --color-btn-bg: var(--btn-bg);
+  --color-badge-bg: var(--badge-bg);
+
+  --color-btn-border: var(--btn-border);
+  --color-divider: var(--divider);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-placeholder: var(--text-placeholder);
+  --color-text-dim: var(--text-dim);
+  --color-text-badge: var(--text-badge);
+
+  /* Font Sizes */
+  --font-size-logo: var(--fs-logo);
+  --font-size-body: var(--fs-body);
+  --font-size-sidebar: var(--fs-sidebar);
+  --font-size-label: var(--fs-label);
+  --font-size-caption: var(--fs-caption);
+
+  /* Existing shadcn mappings */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 :root {
@@ -83,6 +117,41 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+
+--sidebar-bg: #181819;
+  --main-bg: #121212;
+  --input-bg: #1f1f1f;
+  --btn-bg: #121212;
+  --badge-bg: #101e29;
+
+  /* Borders */
+  --btn-border: #2f2f2f;
+  --divider: #262626;
+
+
+  /* Text */
+  --text-primary: #d9d9d9;
+  --text-secondary: #c9c9c9;
+  --text-muted: #979797;
+  --text-placeholder: #7d7d7d;
+  --text-dim: #737373;
+  --text-badge: #0086fa;
+
+  /* Font sizes */
+  --fs-logo: 48px;
+  --fs-body: 15px;
+  --fs-sidebar: 14px;
+  --fs-label: 13px;
+  --fs-caption: 12px;
+
+  /* shadcn semantic colors */
+  --background: #121212;
+  --foreground: #d9d9d9;
+  --primary: #0086fa;
+  --primary-foreground: #ffffff;
+  --border: #2f2f2f;
+  --input: #1f1f1f;
+  --ring: #0086fa;
   }
 
 .dark {

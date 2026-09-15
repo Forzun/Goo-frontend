@@ -40,7 +40,7 @@ export default function RootLayout({
         cormorant.variable
       )}
     >
-      <body   suppressHydrationWarning>
+      <body  suppressHydrationWarning>
         <RootProvider
         >{children}</RootProvider>
       </body>

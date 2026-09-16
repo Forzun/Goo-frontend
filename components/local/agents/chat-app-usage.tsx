@@ -392,7 +392,7 @@ export function ChatAppExample({
 
       <AnimatedSidebarInset className="min-h-0 bg-main-bg text-text-primary text-body">
         
-        {/* <header className="flex h-14 shrink-0 items-center justify-between border-border border-b px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-border border-b px-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
               <PanelLeft className="size-4" />
@@ -409,7 +409,7 @@ export function ChatAppExample({
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
             Connected
           </span>
-        </header> */}
+        </header>
 
         <MessageScroller
           busy={busy}

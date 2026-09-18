@@ -66,7 +66,7 @@ export async function fetchOllamaModels(
         fetchImpl = fetch,
     } = options; 
 
-    const url = `${baseUrl}api/tags`; 
+    const url = `${baseUrl}/api/tags`; 
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort() , timeoutMs);
@@ -78,7 +78,6 @@ export async function fetchOllamaModels(
         response = await fetchImpl(url, { 
             method: "GET", 
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }, 
             signal: controller.signal
@@ -94,8 +93,6 @@ export async function fetchOllamaModels(
         const body = await response.text().catch(() => undefined)
         throw new OllamaResponseError(response.status , body ?? "")
     }
-    console.log("Response", response)
-    console.log("json", response.json())
     
     let payload: OllamaTagResponse;
   

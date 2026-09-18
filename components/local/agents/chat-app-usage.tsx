@@ -48,7 +48,7 @@ import {
   MessageBubbleContent,
 } from "@/components/local/agents/message-bubble";
 import { MessageScroller } from "@/components/local/agents/message-scroller";
-import { PromptInput } from "@/components/local/agents/prompt-input";
+import { PromptInput, PromptModel } from "@/components/local/agents/prompt-input";
 import { StreamingResponse } from "@/components/local/agents/streaming-response";
 import { TodoList, type TodoItem } from "@/components/local/agents/todo-list";
 import {
@@ -74,6 +74,8 @@ import {
   AnimatedSidebarTrigger,
 } from "@/components/local/motion/animated-sidebar";
 import { cn } from "@/lib/utils";
+import { useFetchModels } from "@/hooks/use-models";
+import { LocalModel } from "@/types/ollama";
 
 const resources: SidebarResource[] = [
   {
@@ -194,6 +196,8 @@ export function ChatAppExample({
   const [approvalStatus, setApprovalStatus] =
     useState<ApprovalCardStatus>("pending");
 
+  const { models } = useFetchModels();
+  
   const clearToolTimers = useCallback(() => {
     toolTimers.current.forEach(window.clearTimeout);
     toolTimers.current = [];
@@ -215,7 +219,7 @@ export function ChatAppExample({
       clearChatTimers();
       clearApprovalTimers();
     },
-    [clearApprovalTimers, clearChatTimers, clearToolTimers],
+    [clearApprovalTimers, clearChatTimers, clearToolTimers , models],
   );
 
   const plan = useMemo<TodoItem[]>(() => {
@@ -671,12 +675,11 @@ export function ChatAppExample({
               minRows={1}
               maxRows={4}
               placeholder="Ask the agent to continue…"
-              models={[
-                { value: "balanced", label: "Balanced" },
-                { value: "fast", label: "Fast" },
-                { value: "deep", label: "Deep reasoning" },
-              ]}
-              defaultModel="balanced"
+              models={models?.map((model) => ({
+                value: model.name,
+                label: model.name
+              }) as PromptModel)}
+              defaultModel={models?.[0]?.name}
               actions={[
                 { value: "attach", label: "Attach file", icon: <Paperclip /> },
                 { value: "project", label: "Add project context", icon: <FolderKanban /> },

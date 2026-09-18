@@ -273,7 +273,7 @@ export function PromptInput({
                 </span>
               </span>
             </SelectTrigger>
-            <SelectContent className="right-auto w-52 shadow-none">
+            <SelectContent className="right-auto w-52 shadow-none bg-card text-placeholder text-body">
               {models.map((option) => (
                 <SelectItem
                   key={option.value}

@@ -312,6 +312,8 @@ export function ChatAppExample({
     ]);
     setInput("");
     setPending(true);
+
+    // need to remove this fake timer and use ollama actual response
     chatTimers.current.push(
       window.setTimeout(() => {
         setMessages((current) => [

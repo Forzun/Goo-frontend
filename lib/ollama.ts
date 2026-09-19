@@ -108,22 +108,45 @@ export async function fetchOllamaModels(
 }
 
 interface OllamaStreamResponse { 
-  model: string;
-  created_at: string;
-  message: {
-    role: "assistant" | "user" | "system" , content: string
-  };
+  model?: string;
+  created_at?: string;
+  response?: string;              // /api/generate shape
+  message?: { role: string; content: string };  // /api/chat shape
   done: boolean;
   done_reason?: string;
   total_duration?: number;
   eval_count?: number;
 }
 
-export async function* ollamaResponse(prompt: string , model: string){
 
-    const url = `${DEFAULT_BASE_URL}/api/chat`
+function parseChunk(line: string): string | null{ 
 
-    const response = await fetch(url, { 
+  const trimmed = line.trim()
+  
+  if(!trimmed) return null;
+
+  let data: OllamaStreamResponse;
+
+  try{
+    data = JSON.parse(trimmed) as OllamaStreamResponse 
+  }catch(error){ 
+    throw new OllamaResponseError(200 , `Malformed data found:${trimmed}`) 
+  }
+
+  const token = data.response ?? data.message?.content 
+ 
+  return typeof token === "string" ? token : null;
+}
+
+export async function* ollamaResponse(prompt: string , model: string, options: {baseUrl?: string , signal?:AbortSignal }): AsyncGenerator<string>{
+
+    const {baseUrl = DEFAULT_BASE_URL , signal} = options
+    const url = `${baseUrl.replace(/\/$/, "")}/api/chat`
+
+    let response: Response;
+  
+    try{
+    response = await fetch(url, { 
         method: 'POST', 
         headers: {
             "Content-Type": "application/json",
@@ -139,9 +162,12 @@ export async function* ollamaResponse(prompt: string , model: string){
             stream: true
         })
     })
-    
-   
-    if(!response.ok) { 
+  }catch(error){ 
+    if(signal?.aborted) throw  error
+    throw new OllamaConnectionError(baseUrl, error) 
+  }
+  
+  if(!response.ok) { 
         const body = await response.text().catch(() => undefined);
         throw new OllamaResponseError(response.status , body ?? " ")    
     }
@@ -159,44 +185,19 @@ export async function* ollamaResponse(prompt: string , model: string){
         const { done , value } = await reader?.read()  
        
         if(done){
-          if(buffer.trim()){ 
-            yield buffer.trim()
-          } 
           break;
         }
 
-       buffer += decoder.decode(value , {stream: true}) 
-       
+        buffer += decoder.decode(value , {stream: true}) 
+        
         const lines = buffer.split('\n')
-        buffer = lines.pop() || ''; 
+        // buffer = lines.pop() || ''; 
 
-    for (const line of lines) {
-        const trimmedLine = line.trim(); 
-        if (!trimmedLine) continue;
-
-      
-        if (trimmedLine.startsWith('data: ')) {
-          const jsonStr = trimmedLine.slice(6);
-          if (jsonStr === '[DONE]') continue;
-          
-          try {
-            const data = JSON.parse(jsonStr);
-            // Adjust 'content' field based on your LLM provider's output format
-            if (data.content || data.choices?.[0]?.delta?.content) {
-              const token = data.content || data.choices[0].delta.content;
-              yield token;
-            }
-          } catch (e) {
-            // Fallback for raw text streams
-            yield trimmedLine;
-          }
-        } else {
-          // Raw text stream fallback
-          yield trimmedLine;
-        }
+      for (const line of lines) { 
+        const token = parseChunk(line)
+        if(token !== null) yield token
       }
     }
-
     }finally{ 
      reader.releaseLock(); 
     }

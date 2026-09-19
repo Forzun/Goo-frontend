@@ -138,7 +138,7 @@ function parseChunk(line: string): string | null{
   return typeof token === "string" ? token : null;
 }
 
-export async function* ollamaResponse(prompt: string , model: string, options: {baseUrl?: string , signal?:AbortSignal }): AsyncGenerator<string>{
+export async function* ollamaResponse(prompt: string , model: string, options: {baseUrl?: string , signal?:AbortSignal} = {}): AsyncGenerator<string>{
 
     const {baseUrl = DEFAULT_BASE_URL , signal} = options
     const url = `${baseUrl.replace(/\/$/, "")}/api/chat`

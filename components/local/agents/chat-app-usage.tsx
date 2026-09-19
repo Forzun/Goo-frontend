@@ -76,6 +76,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useFetchModels } from "@/hooks/use-models";
 import { LocalModel } from "@/types/ollama";
+import { useResponse } from "@/hooks/use-response";
 
 const resources: SidebarResource[] = [
   {
@@ -193,11 +194,14 @@ export function ChatAppExample({
   const [activeReply, setActiveReply] = useState<string | null>(null);
   const [messages, setMessages] = useState<AddedMessage[]>([]);
   const [toolStatus, setToolStatus] = useState<ToolApprovalStatus>("pending");
+  const [ model , setModel] = useState<string | null>() 
   const [approvalStatus, setApprovalStatus] =
     useState<ApprovalCardStatus>("pending");
 
-  const { models } = useFetchModels();
-  
+  // Custom hooks
+  const { models } = useFetchModels(); 
+  const { data , loading ,error , send } = useResponse(model ?? "");
+
   const clearToolTimers = useCallback(() => {
     toolTimers.current.forEach(window.clearTimeout);
     toolTimers.current = [];
@@ -309,13 +313,13 @@ export function ChatAppExample({
     setMessages((current) => [
       ...current,
       { id: `user-${id}`, from: "user", content: value },
+      { id: assistantId , from: "assistant" , content: "", streaming: true},
     ]);
     setInput("");
     setPending(true);
+    setActiveReply(assistantId);
+    send(value);
 
-    // need to remove this fake timer and use ollama actual response
-    chatTimers.current.push(
-      window.setTimeout(() => {
         setMessages((current) => [
           ...current,
           {
@@ -327,9 +331,26 @@ export function ChatAppExample({
         ]);
         setPending(false);
         setActiveReply(assistantId);
-      }, reduce ? 0 : 420),
-    );
   };
+
+  
+  useEffect(() => { 
+    if(!activeReply) return; 
+    setMessages((current) => (
+      current.map((message) => message.id === activeReply ? {...message , content: data ?? "Nothing"} : message)
+    ))
+  }, [data , activeReply])
+
+  useEffect(() => { 
+        if(!loading && !error && activeReply && data) {
+          setMessages((current) => ( 
+            current.map((m) => m.id === activeReply ? {...m , streaming: false} : m)
+          ))
+        }
+        setPending(false);
+        setActiveReply(null)
+  },[loading , data ,error , activeReply])
+
 
   const stop = () => {
     clearChatTimers();
@@ -679,8 +700,9 @@ export function ChatAppExample({
               placeholder="Ask the agent to continue…"
               models={models?.map((model) => ({
                 value: model.name,
-                label: model.name
+                label: model.name,
               }) as PromptModel)}
+              onModelChange={(model) => setModel(model)}
               defaultModel={models?.[0]?.name}
               actions={[
                 { value: "attach", label: "Attach file", icon: <Paperclip /> },

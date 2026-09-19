@@ -6,7 +6,7 @@ import { baseOptions } from '@/lib/layout.shared';
 
 import "./docs.css"
 
-export default function Layout({ children }: LayoutProps<'/docs'>) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <DocsLayout sidebar={{enabled: true}} tree={source.getPageTree()} {...baseOptions()}>
       {children}

@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Bot,
@@ -10,8 +10,8 @@ import {
   Search,
   User,
   WandSparkles,
-} from "lucide-react";
-import { useReducedMotion } from "motion/react";
+} from "lucide-react"
+import { useReducedMotion } from "motion/react"
 import {
   type ComponentProps,
   useCallback,
@@ -19,22 +19,22 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { AgentActivity } from "@/components/local/agents/agent-activity";
+} from "react"
+import { AgentActivity } from "@/components/local/agents/agent-activity"
 import {
   AISidebar,
   type SidebarResource,
-} from "@/components/local/agents/ai-sidebar";
+} from "@/components/local/agents/ai-sidebar"
 import {
   ApprovalCard,
   type ApprovalCardQuestion,
   type ApprovalCardStatus,
-} from "@/components/local/agents/approval-card";
-import { CodeBlock } from "@/components/local/agents/code-block";
-import { ChatApp } from "@/components/local/agents/chat-app";
-import { FileDiff } from "@/components/local/agents/file-diff";
-import { ImageGeneration } from "@/components/local/agents/image-generation";
-import { ThinkingShimmer } from "@/components/local/agents/loading-states";
+} from "@/components/local/agents/approval-card"
+import { CodeBlock } from "@/components/local/agents/code-block"
+import { ChatApp } from "@/components/local/agents/chat-app"
+import { FileDiff } from "@/components/local/agents/file-diff"
+import { ImageGeneration } from "@/components/local/agents/image-generation"
+import { ThinkingShimmer } from "@/components/local/agents/loading-states"
 import {
   Message,
   MessageAvatar,
@@ -42,24 +42,27 @@ import {
   MessageFooter,
   MessageGroup,
   MessageHeader,
-} from "@/components/local/agents/message";
+} from "@/components/local/agents/message"
 import {
   MessageBubble,
   MessageBubbleContent,
-} from "@/components/local/agents/message-bubble";
-import { MessageScroller } from "@/components/local/agents/message-scroller";
-import { PromptInput, PromptModel } from "@/components/local/agents/prompt-input";
-import { StreamingResponse } from "@/components/local/agents/streaming-response";
-import { TodoList, type TodoItem } from "@/components/local/agents/todo-list";
+} from "@/components/local/agents/message-bubble"
+import { MessageScroller } from "@/components/local/agents/message-scroller"
+import {
+  PromptInput,
+  PromptModel,
+} from "@/components/local/agents/prompt-input"
+import { StreamingResponse } from "@/components/local/agents/streaming-response"
+import { TodoList, type TodoItem } from "@/components/local/agents/todo-list"
 import {
   ToolApproval,
   ToolApprovalCode,
   type ToolApprovalStatus,
-} from "@/components/local/agents/tool-approval";
+} from "@/components/local/agents/tool-approval"
 import {
   ToolResult,
   ToolResultOutput,
-} from "@/components/local/agents/tool-result";
+} from "@/components/local/agents/tool-result"
 import {
   AnimatedSidebar,
   AnimatedSidebarContent,
@@ -72,11 +75,11 @@ import {
   AnimatedSidebarMenuItem,
   AnimatedSidebarRail,
   AnimatedSidebarTrigger,
-} from "@/components/local/motion/animated-sidebar";
-import { cn } from "@/lib/utils";
-import { useFetchModels } from "@/hooks/use-models";
-import { LocalModel } from "@/types/ollama";
-import { useResponse } from "@/hooks/use-response";
+} from "@/components/local/motion/animated-sidebar"
+import { cn } from "@/lib/utils"
+import { useFetchModels } from "@/hooks/use-models"
+import { LocalModel } from "@/types/ollama"
+import { useResponse } from "@/hooks/use-response"
 
 const resources: SidebarResource[] = [
   {
@@ -99,7 +102,7 @@ const resources: SidebarResource[] = [
     ],
   },
   { id: "archive", label: "Archived runs", kind: "folder" },
-];
+]
 
 const diffLines = [
   {
@@ -127,7 +130,7 @@ const diffLines = [
     newLine: 43,
     content: "  return result.ok ? submitOrder(total) : result;",
   },
-];
+]
 
 const approvalQuestions: ApprovalCardQuestion[] = [
   {
@@ -140,34 +143,80 @@ const approvalQuestions: ApprovalCardQuestion[] = [
     allowCustom: true,
     customPlaceholder: "Add another release instruction…",
   },
-];
+]
 
 const reply =
-  "I’ll keep the patch focused, preserve the current checkout layout, and run the same validation path before preparing the release.";
+  "I’ll keep the patch focused, preserve the current checkout layout, and run the same validation path before preparing the release."
 
 interface AddedMessage {
-  id: string;
-  from: "user" | "assistant";
-  content: string;
-  streaming?: boolean;
+  id: string
+  from: "user" | "assistant"
+  content: string
+  streaming?: boolean
 }
 
 function GeneratedPreview() {
   return (
-    <svg
-      viewBox="0 0 640 420"
-      aria-hidden="true"
-      className="size-full"
-    >
-      <rect width="640" height="420" fill="currentColor" className="text-muted" />
-      <rect x="64" y="52" width="512" height="316" rx="28" fill="currentColor" className="text-background" />
-      <circle cx="320" cy="144" r="38" fill="currentColor" className="text-emerald-500" />
-      <path d="m301 144 13 13 26-29" fill="none" stroke="white" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="204" y="210" width="232" height="18" rx="9" fill="currentColor" className="text-foreground/85" />
-      <rect x="238" y="246" width="164" height="12" rx="6" fill="currentColor" className="text-muted-foreground/35" />
-      <rect x="248" y="298" width="144" height="34" rx="17" fill="currentColor" className="text-foreground" />
+    <svg viewBox="0 0 640 420" aria-hidden="true" className="size-full">
+      <rect
+        width="640"
+        height="420"
+        fill="currentColor"
+        className="text-muted"
+      />
+      <rect
+        x="64"
+        y="52"
+        width="512"
+        height="316"
+        rx="28"
+        fill="currentColor"
+        className="text-background"
+      />
+      <circle
+        cx="320"
+        cy="144"
+        r="38"
+        fill="currentColor"
+        className="text-emerald-500"
+      />
+      <path
+        d="m301 144 13 13 26-29"
+        fill="none"
+        stroke="white"
+        strokeWidth="9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="204"
+        y="210"
+        width="232"
+        height="18"
+        rx="9"
+        fill="currentColor"
+        className="text-foreground/85"
+      />
+      <rect
+        x="238"
+        y="246"
+        width="164"
+        height="12"
+        rx="6"
+        fill="currentColor"
+        className="text-muted-foreground/35"
+      />
+      <rect
+        x="248"
+        y="298"
+        width="144"
+        height="34"
+        rx="17"
+        fill="currentColor"
+        className="text-foreground"
+      />
     </svg>
-  );
+  )
 }
 
 function AssistantIdentity({ label = "beUI Agent" }: { label?: string }) {
@@ -176,55 +225,55 @@ function AssistantIdentity({ label = "beUI Agent" }: { label?: string }) {
       <span>{label}</span>
       <span>Now</span>
     </MessageHeader>
-  );
+  )
 }
 
 export function ChatAppExample({
   className,
 }: Pick<ComponentProps<typeof ChatApp>, "className">) {
-  const reduce = useReducedMotion() ?? false;
-  const toolTimers = useRef<number[]>([]);
-  const chatTimers = useRef<number[]>([]);
-  const approvalTimers = useRef<number[]>([]);
-  const runId = useRef(0);
-  const [items, setItems] = useState(resources);
-  const [activeResource, setActiveResource] = useState("checkout");
-  const [input, setInput] = useState("");
-  const [pending, setPending] = useState(false);
-  const [activeReply, setActiveReply] = useState<string | null>(null);
-  const [messages, setMessages] = useState<AddedMessage[]>([]);
-  const [toolStatus, setToolStatus] = useState<ToolApprovalStatus>("pending");
-  const [ model , setModel] = useState<string | null>() 
+  const reduce = useReducedMotion() ?? false
+  const toolTimers = useRef<number[]>([])
+  const chatTimers = useRef<number[]>([])
+  const approvalTimers = useRef<number[]>([])
+  const runId = useRef(0)
+  const [items, setItems] = useState(resources)
+  const [activeResource, setActiveResource] = useState("checkout")
+  const [input, setInput] = useState("")
+  const [pending, setPending] = useState(false)
+  const [activeReply, setActiveReply] = useState<string | null>(null)
+  const [messages, setMessages] = useState<AddedMessage[]>([])
+  const [toolStatus, setToolStatus] = useState<ToolApprovalStatus>("pending")
+  const [model, setModel] = useState<string | null>()
   const [approvalStatus, setApprovalStatus] =
-    useState<ApprovalCardStatus>("pending");
+    useState<ApprovalCardStatus>("pending")
 
   // Custom hooks
-  const { models } = useFetchModels(); 
-  const { data , loading ,error , send } = useResponse(model ?? "");
+  const { models } = useFetchModels()
+  const { data, loading, error, send } = useResponse(model ?? "")
 
   const clearToolTimers = useCallback(() => {
-    toolTimers.current.forEach(window.clearTimeout);
-    toolTimers.current = [];
-  }, []);
+    toolTimers.current.forEach(window.clearTimeout)
+    toolTimers.current = []
+  }, [])
 
   const clearChatTimers = useCallback(() => {
-    chatTimers.current.forEach(window.clearTimeout);
-    chatTimers.current = [];
-  }, []);
+    chatTimers.current.forEach(window.clearTimeout)
+    chatTimers.current = []
+  }, [])
 
   const clearApprovalTimers = useCallback(() => {
-    approvalTimers.current.forEach(window.clearTimeout);
-    approvalTimers.current = [];
-  }, []);
+    approvalTimers.current.forEach(window.clearTimeout)
+    approvalTimers.current = []
+  }, [])
 
   useEffect(
     () => () => {
-      clearToolTimers();
-      clearChatTimers();
-      clearApprovalTimers();
+      clearToolTimers()
+      clearChatTimers()
+      clearApprovalTimers()
     },
-    [clearApprovalTimers, clearChatTimers, clearToolTimers , models],
-  );
+    [clearApprovalTimers, clearChatTimers, clearToolTimers, models]
+  )
 
   const plan = useMemo<TodoItem[]>(() => {
     const checksStatus =
@@ -234,136 +283,136 @@ export function ChatAppExample({
           ? "in-progress"
           : toolStatus === "denied" || toolStatus === "error"
             ? "cancelled"
-            : "pending";
+            : "pending"
     return [
-      { id: "inspect", title: "Inspect the checkout flow", status: "completed" },
-      { id: "patch", title: "Prepare the validation patch", status: "completed" },
+      {
+        id: "inspect",
+        title: "Inspect the checkout flow",
+        status: "completed",
+      },
+      {
+        id: "patch",
+        title: "Prepare the validation patch",
+        status: "completed",
+      },
       { id: "checks", title: "Run focused checks", status: checksStatus },
       {
         id: "review",
         title: "Collect release approval",
         status: toolStatus === "complete" ? "in-progress" : "pending",
       },
-    ];
-  }, [toolStatus]);
+    ]
+  }, [toolStatus])
 
   useEffect(() => {
-    if (!activeReply) return;
+    if (!activeReply) return
 
     if (reduce) {
       setMessages((current) =>
         current.map((message) =>
           message.id === activeReply
             ? { ...message, content: reply, streaming: false }
-            : message,
-        ),
-      );
-      setActiveReply(null);
-      return;
+            : message
+        )
+      )
+      setActiveReply(null)
+      return
     }
 
-    const startedAt = performance.now();
-    let frame = 0;
+    const startedAt = performance.now()
+    let frame = 0
     const stream = (now: number) => {
       const cursor = Math.min(
         reply.length,
-        Math.floor(((now - startedAt) / 1000) * 92),
-      );
-      const content = reply.slice(0, cursor);
+        Math.floor(((now - startedAt) / 1000) * 92)
+      )
+      const content = reply.slice(0, cursor)
       setMessages((current) =>
         current.map((message) =>
           message.id === activeReply && message.content !== content
             ? { ...message, content }
-            : message,
-        ),
-      );
+            : message
+        )
+      )
 
       if (cursor < reply.length) {
-        frame = requestAnimationFrame(stream);
+        frame = requestAnimationFrame(stream)
       } else {
         setMessages((current) =>
           current.map((message) =>
             message.id === activeReply
               ? { ...message, streaming: false }
-              : message,
-          ),
-        );
-        setActiveReply(null);
+              : message
+          )
+        )
+        setActiveReply(null)
       }
-    };
+    }
 
-    frame = requestAnimationFrame(stream);
-    return () => cancelAnimationFrame(frame);
-  }, [activeReply, reduce]);
+    frame = requestAnimationFrame(stream)
+    return () => cancelAnimationFrame(frame)
+  }, [activeReply, reduce])
 
   const approveTool = () => {
-    clearToolTimers();
-    setToolStatus("approving");
+    clearToolTimers()
+    setToolStatus("approving")
     toolTimers.current = [
       window.setTimeout(() => setToolStatus("approved"), 450),
       window.setTimeout(() => setToolStatus("running"), 850),
       window.setTimeout(() => setToolStatus("complete"), 1650),
-    ];
-  };
+    ]
+  }
 
   const submit = (value: string) => {
-    if (!value.trim() || pending || activeReply) return;
-    const id = runId.current++;
-    const assistantId = `assistant-${id}`;
+    if (!value.trim() || pending || activeReply) return
+    const id = runId.current++
+    const assistantId = `assistant-${id}`
     setMessages((current) => [
       ...current,
       { id: `user-${id}`, from: "user", content: value },
-      { id: assistantId , from: "assistant" , content: "", streaming: true},
-    ]);
-    setInput("");
-    setPending(true);
-    setActiveReply(assistantId);
-    send(value);
+      { id: assistantId, from: "assistant", content: "", streaming: true },
+    ])
+    setInput("")
+    setPending(true)
+    setActiveReply(assistantId)
+    send(value)
+  }
 
-        setMessages((current) => [
-          ...current,
-          {
-            id: assistantId,
-            from: "assistant",
-            content: "",
-            streaming: true,
-          },
-        ]);
-        setPending(false);
-        setActiveReply(assistantId);
-  };
+  useEffect(() => {
+    console.log(data)
+    if (!activeReply) {
+      return
+    }
 
-  
-  useEffect(() => { 
-    if(!activeReply) return; 
-    setMessages((current) => (
-      current.map((message) => message.id === activeReply ? {...message , content: data ?? "Nothing"} : message)
-    ))
-  }, [data , activeReply])
+    setMessages((current) =>
+      current.map((m) => (m.id === activeReply ? { ...m, content: data! } : m))
+    )
+  }, [data, activeReply])
 
-  useEffect(() => { 
-        if(!loading && !error && activeReply && data) {
-          setMessages((current) => ( 
-            current.map((m) => m.id === activeReply ? {...m , streaming: false} : m)
-          ))
-        }
-        setPending(false);
-        setActiveReply(null)
-  },[loading , data ,error , activeReply])
-
+  useEffect(() => {
+    if (!loading && !error && activeReply && data) {
+      setMessages((current) =>
+        current.map((m) =>
+          m.id === activeReply ? { ...m, streaming: false } : m
+        )
+      )
+      setPending(false)
+      setActiveReply(null)
+    }
+  }, [loading, error, data, activeReply])
 
   const stop = () => {
-    clearChatTimers();
-    setPending(false);
+    clearChatTimers()
+    setPending(false)
     setMessages((current) =>
       current.map((message) =>
-        message.streaming ? { ...message, streaming: false } : message,
-      ),
-    );
-    setActiveReply(null);
-  };
+        message.streaming ? { ...message, streaming: false } : message
+      )
+    )
+    setActiveReply(null)
+  }
 
-  const busy = pending || activeReply !== null;
+  const busy = pending || activeReply !== null
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
@@ -397,11 +446,11 @@ export function ChatAppExample({
           </AnimatedSidebarGroup>
 
           <AnimatedSidebarGroup className="min-h-0 flex-1 px-1 py-0">
-            <AnimatedSidebarGroupLabel className="mb-1 h-8 px-2 text-xs font-medium normal-case tracking-normal">
+            <AnimatedSidebarGroupLabel className="mb-1 h-8 px-2 text-xs font-medium tracking-normal normal-case">
               Projects
             </AnimatedSidebarGroupLabel>
             <AnimatedSidebarGroupContent className="relative min-h-0 flex-1 overflow-hidden">
-              <div className="h-full overflow-y-auto overscroll-contain pb-8 [overflow-anchor:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="h-full [scrollbar-width:none] overflow-y-auto overscroll-contain pb-8 [overflow-anchor:none] [&::-webkit-scrollbar]:hidden">
                 <AISidebar
                   items={items}
                   activeId={activeResource}
@@ -410,16 +459,18 @@ export function ChatAppExample({
                   onItemsChange={setItems}
                 />
               </div>
-              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent" />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent"
+              />
             </AnimatedSidebarGroupContent>
           </AnimatedSidebarGroup>
         </AnimatedSidebarContent>
         <AnimatedSidebarRail />
       </AnimatedSidebar>
 
-      <AnimatedSidebarInset className="min-h-0 bg-main-bg text-text-primary text-body">
-        
-        <header className="flex h-14 shrink-0 items-center justify-between border-border border-b px-4">
+      <AnimatedSidebarInset className="min-h-0 bg-main-bg text-body text-text-primary">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
               <PanelLeft className="size-4" />
@@ -447,35 +498,70 @@ export function ChatAppExample({
         >
           <MessageGroup spacing="default">
             <Message from="user">
-              <MessageAvatar><User /></MessageAvatar>
+              <MessageAvatar>
+                <User />
+              </MessageAvatar>
               <MessageContent>
-                <MessageHeader><span>You</span><span>10:24</span></MessageHeader>
+                <MessageHeader>
+                  <span>You</span>
+                  <span>10:24</span>
+                </MessageHeader>
                 <MessageBubble variant="solid">
                   <MessageBubbleContent>
-                    Audit the checkout flow, fix the validation gap, and prepare a release-ready patch.
+                    Audit the checkout flow, fix the validation gap, and prepare
+                    a release-ready patch.
                   </MessageBubbleContent>
                 </MessageBubble>
               </MessageContent>
             </Message>
 
             <Message from="assistant">
-              <MessageAvatar><Bot /></MessageAvatar>
+              <MessageAvatar>
+                <Bot />
+              </MessageAvatar>
               <MessageContent className="gap-3">
-                <MessageHeader><span>beUI Agent</span><span>10:24</span></MessageHeader>
+                <MessageHeader>
+                  <span>beUI Agent</span>
+                  <span>10:24</span>
+                </MessageHeader>
                 <AgentActivity
                   status="complete"
                   duration={6}
                   defaultOpen
                   collapseOnComplete={false}
                   items={[
-                    { id: "reason", type: "text", content: "Tracing the checkout submission path and validation boundary." },
-                    { id: "read", type: "tool", action: "read", target: "checkout/submit.ts" },
-                    { id: "search", type: "search", query: "order validation failures", results: [
-                      { id: "result-1", title: "Agent interface guide", domain: "beui.dev", url: "/docs/ai-agents" },
-                    ] },
+                    {
+                      id: "reason",
+                      type: "text",
+                      content:
+                        "Tracing the checkout submission path and validation boundary.",
+                    },
+                    {
+                      id: "read",
+                      type: "tool",
+                      action: "read",
+                      target: "checkout/submit.ts",
+                    },
+                    {
+                      id: "search",
+                      type: "search",
+                      query: "order validation failures",
+                      results: [
+                        {
+                          id: "result-1",
+                          title: "Agent interface guide",
+                          domain: "beui.dev",
+                          url: "/docs/ai-agents",
+                        },
+                      ],
+                    },
                   ]}
                 />
-                <TodoList items={plan} title="Release plan" collapseOnComplete={false} />
+                <TodoList
+                  items={plan}
+                  title="Release plan"
+                  collapseOnComplete={false}
+                />
               </MessageContent>
             </Message>
 
@@ -504,8 +590,8 @@ export function ChatAppExample({
                   onApprove={approveTool}
                   onAlwaysAllow={approveTool}
                   onDeny={() => {
-                    clearToolTimers();
-                    setToolStatus("denied");
+                    clearToolTimers()
+                    setToolStatus("denied")
                   }}
                 />
               </MessageContent>
@@ -547,7 +633,9 @@ export function ChatAppExample({
                         filename="validation.ts"
                         language="typescript"
                         status="complete"
-                        code={"export function validateOrder(order: Order) {\n  return schema.safeParse(order);\n}"}
+                        code={
+                          "export function validateOrder(order: Order) {\n  return schema.safeParse(order);\n}"
+                        }
                         showLineNumbers
                       />
                     </>
@@ -637,14 +725,14 @@ export function ChatAppExample({
                     questions={approvalQuestions}
                     status={approvalStatus}
                     onSubmit={() => {
-                      setApprovalStatus("submitting");
-                      clearApprovalTimers();
+                      setApprovalStatus("submitting")
+                      clearApprovalTimers()
                       approvalTimers.current.push(
                         window.setTimeout(
                           () => setApprovalStatus("answered"),
-                          650,
-                        ),
-                      );
+                          650
+                        )
+                      )
                     }}
                     result="Release direction sent to the agent."
                   />
@@ -655,29 +743,47 @@ export function ChatAppExample({
             {messages.map((message) => (
               <Message key={message.id} from={message.from} animateIn>
                 {message.from === "assistant" ? (
-                  <MessageAvatar><Bot /></MessageAvatar>
+                  <MessageAvatar>
+                    <Bot />
+                  </MessageAvatar>
                 ) : (
-                  <MessageAvatar><User /></MessageAvatar>
+                  <MessageAvatar>
+                    <User />
+                  </MessageAvatar>
                 )}
                 <MessageContent>
-                  {message.from === "assistant" ? <AssistantIdentity label="beUI Agent" /> : null}
-                  <MessageBubble variant={message.from === "user" ? "solid" : "soft"}>
+                  {message.from === "assistant" ? (
+                    <AssistantIdentity label="beUI Agent" />
+                  ) : null}
+                  <MessageBubble
+                    variant={message.from === "user" ? "solid" : "soft"}
+                  >
                     <MessageBubbleContent>
                       {message.from === "assistant" ? (
-                        <StreamingResponse status={message.streaming ? "streaming" : "complete"} showActions={!message.streaming} copyText={message.content}>
+                        <StreamingResponse
+                          status={message.streaming ? "streaming" : "complete"}
+                          showActions={!message.streaming}
+                          copyText={message.content}
+                        >
                           {message.content}
                         </StreamingResponse>
-                      ) : message.content}
+                      ) : (
+                        message.content
+                      )}
                     </MessageBubbleContent>
                   </MessageBubble>
-                  {message.from === "user" ? <MessageFooter>Sent</MessageFooter> : null}
+                  {message.from === "user" ? (
+                    <MessageFooter>Sent</MessageFooter>
+                  ) : null}
                 </MessageContent>
               </Message>
             ))}
 
             {pending ? (
               <Message from="assistant" animateIn>
-                <MessageAvatar><Bot /></MessageAvatar>
+                <MessageAvatar>
+                  <Bot />
+                </MessageAvatar>
                 <MessageContent>
                   <ThinkingShimmer>Reviewing your direction</ThinkingShimmer>
                 </MessageContent>
@@ -686,10 +792,10 @@ export function ChatAppExample({
           </MessageGroup>
         </MessageScroller>
 
-        <div className="shrink-0 pb-3 ">
+        <div className="shrink-0 pb-3">
           <div className="mx-auto max-w-3xl">
             <PromptInput
-              className="bg-input-bg border border-edge text-placeholder text-body "
+              className="border-edge text-placeholder border bg-input-bg text-body"
               value={input}
               onValueChange={setInput}
               loading={busy}
@@ -698,21 +804,32 @@ export function ChatAppExample({
               minRows={1}
               maxRows={4}
               placeholder="Ask the agent to continue…"
-              models={models?.map((model) => ({
-                value: model.name,
-                label: model.name,
-              }) as PromptModel)}
+              models={models?.map(
+                (model) =>
+                  ({
+                    value: model.name,
+                    label: model.name,
+                  }) as PromptModel
+              )}
               onModelChange={(model) => setModel(model)}
               defaultModel={models?.[0]?.name}
               actions={[
                 { value: "attach", label: "Attach file", icon: <Paperclip /> },
-                { value: "project", label: "Add project context", icon: <FolderKanban /> },
-                { value: "skill", label: "Use a skill", icon: <WandSparkles /> },
+                {
+                  value: "project",
+                  label: "Add project context",
+                  icon: <FolderKanban />,
+                },
+                {
+                  value: "skill",
+                  label: "Use a skill",
+                  icon: <WandSparkles />,
+                },
               ]}
             />
           </div>
         </div>
       </AnimatedSidebarInset>
     </ChatApp>
-  );
+  )
 }

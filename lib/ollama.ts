@@ -183,7 +183,7 @@ export async function* ollamaResponse(prompt: string , model: string, options: {
     try{
       while(true){ 
         const { done , value } = await reader?.read()  
-       
+      
         if(done){
           break;
         }

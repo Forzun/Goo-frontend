@@ -1,3 +1,5 @@
+"use client"
+
 import {
   OllamaConnectionError,
   OllamaResponseError,
@@ -15,13 +17,13 @@ interface UseResponseResult {
 
 export function useResponse(model: string): UseResponseResult {
   const [data, setData] = useState<string>("")
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<Error | null>(null)
   const acRef = useRef<AbortController | null>(null)
 
   const send = useCallback(
     async (prompt: string) => {
-      if (!prompt && !model) return
+      if (!prompt || !model) return
 
       if (acRef.current) {
         acRef.current.abort()
@@ -62,13 +64,12 @@ export function useResponse(model: string): UseResponseResult {
         if (!ac.signal.aborted) setLoading(false)
       }
     },
-    [prompt, model]
+    [model]
   )
 
   const stop = useCallback(() => acRef.current?.abort(), [])
 
   useEffect(() => () => acRef.current?.abort(), [])  
-
 
   return { data, loading, error, send , stop}
 }

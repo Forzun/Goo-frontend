@@ -34,7 +34,6 @@ export interface FetchModelsOptions {
   fetchImpl?: typeof fetch
 }
 
-
 /**
  * Normalize the response from the Ollama API into user friendly response
  */
@@ -107,99 +106,108 @@ export async function fetchOllamaModels(
   return (payload.models ?? []).map(normalizeModel)
 }
 
-interface OllamaStreamResponse { 
-  model?: string;
-  created_at?: string;
-  response?: string;              // /api/generate shape
-  message?: { role: string; content: string };  // /api/chat shape
-  done: boolean;
-  done_reason?: string;
-  total_duration?: number;
-  eval_count?: number;
+interface OllamaStreamResponse {
+  model?: string
+  created_at?: string
+  response?: string // /api/generate shape
+  message?: { role: string; content: string } // /api/chat shape
+  done: boolean
+  done_reason?: string
+  total_duration?: number
+  eval_count?: number
 }
 
-
-function parseChunk(line: string): string | null{ 
-
+function parseChunk(line: string): string | null {
   const trimmed = line.trim()
-  
-  if(!trimmed) return null;
 
-  let data: OllamaStreamResponse;
+  if (!trimmed) return null
 
-  try{
-    data = JSON.parse(trimmed) as OllamaStreamResponse 
-  }catch(error){ 
-    throw new OllamaResponseError(200 , `Malformed data found:${trimmed}`) 
+  let data: OllamaStreamResponse
+
+  try {
+    data = JSON.parse(trimmed) as OllamaStreamResponse
+  } catch {
+    // Incomplete chunk — will be retried after more data arrives
+    return null
   }
 
-  const token = data.response ?? data.message?.content 
- 
-  return typeof token === "string" ? token : null;
+  const token = data.response ?? data.message?.content
+
+  return typeof token === "string" ? token : null
 }
 
-export async function* ollamaResponse(prompt: string , model: string, options: {baseUrl?: string , signal?:AbortSignal} = {}): AsyncGenerator<string>{
+export async function* ollamaResponse(
+  prompt: string,
+  model: string,
+  options: { baseUrl?: string; signal?: AbortSignal } = {}
+): AsyncGenerator<string> {
+  const { baseUrl = DEFAULT_BASE_URL, signal } = options
+  const url = `${baseUrl.replace(/\/$/, "")}/api/chat`
 
-    const {baseUrl = DEFAULT_BASE_URL , signal} = options
-    const url = `${baseUrl.replace(/\/$/, "")}/api/chat`
+  let response: Response
 
-    let response: Response;
-  
-    try{
-    response = await fetch(url, { 
-        method: 'POST', 
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-            model: model, 
-            messages: [
-                {
-                    role: 'user', 
-                    content: prompt 
-                }
-            ], 
-            stream: true
-        })
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        stream: true,
+      }),
+      signal,
     })
-  }catch(error){ 
-    if(signal?.aborted) throw  error
-    throw new OllamaConnectionError(baseUrl, error) 
+  } catch (error) {
+    if (signal?.aborted) throw error
+    throw new OllamaConnectionError(baseUrl, error)
   }
-  
-  if(!response.ok) { 
-        const body = await response.text().catch(() => undefined);
-        throw new OllamaResponseError(response.status , body ?? " ")    
-    }
- 
-    if(!response.body) {
-      throw new Error("Response body in null.") 
-    } 
-    
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder('utf-8') 
-    let buffer = ''
-   
-    try{
-      while(true){ 
-        const { done , value } = await reader?.read()  
-      
-        if(done){
-          break;
-        }
 
-        buffer += decoder.decode(value , {stream: true}) 
-        
-        const lines = buffer.split('\n')
-        // buffer = lines.pop() || ''; 
+  if (!response.ok) {
+    const body = await response.text().catch(() => undefined)
+    throw new OllamaResponseError(response.status, body ?? " ")
+  }
 
-      for (const line of lines) { 
+  if (!response.body) {
+    throw new Error("Response body is null.")
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder("utf-8")
+  let buffer = ""
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) {
+        break
+      }
+
+      buffer += decoder.decode(value, { stream: true })
+
+      const lines = buffer.split("\n")
+      // Keep the last (potentially incomplete) line in the buffer
+      buffer = lines.pop() ?? ""
+
+      for (const line of lines) {
         const token = parseChunk(line)
-        if(token !== null) yield token
+        if (token !== null) yield token
       }
     }
-    }finally{ 
-     reader.releaseLock(); 
-    }
 
+    // Flush any remaining data left in the buffer
+    if (buffer.trim()) {
+      const token = parseChunk(buffer)
+      if (token !== null) yield token
+    }
+  } finally {
+    reader.releaseLock()
+  }
 }

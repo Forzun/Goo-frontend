@@ -78,7 +78,6 @@ import {
 } from "@/components/local/motion/animated-sidebar"
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
-import { LocalModel } from "@/types/ollama"
 import { useResponse } from "@/hooks/use-response"
 
 const resources: SidebarResource[] = [
@@ -145,8 +144,7 @@ const approvalQuestions: ApprovalCardQuestion[] = [
   },
 ]
 
-const reply =
-  "I’ll keep the patch focused, preserve the current checkout layout, and run the same validation path before preparing the release."
+
 
 interface AddedMessage {
   id: string
@@ -249,7 +247,7 @@ export function ChatAppExample({
 
   // Custom hooks
   const { models } = useFetchModels()
-  const { data, loading, error, send } = useResponse(model ?? "")
+  const { data, loading, streaming, error, send } = useResponse(model ?? "")
 
   const clearToolTimers = useCallback(() => {
     toolTimers.current.forEach(window.clearTimeout)
@@ -304,54 +302,7 @@ export function ChatAppExample({
     ]
   }, [toolStatus])
 
-  useEffect(() => {
-    if (!activeReply) return
 
-    if (reduce) {
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === activeReply
-            ? { ...message, content: reply, streaming: false }
-            : message
-        )
-      )
-      setActiveReply(null)
-      return
-    }
-
-    const startedAt = performance.now()
-    let frame = 0
-    const stream = (now: number) => {
-      const cursor = Math.min(
-        reply.length,
-        Math.floor(((now - startedAt) / 1000) * 92)
-      )
-      const content = reply.slice(0, cursor)
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === activeReply && message.content !== content
-            ? { ...message, content }
-            : message
-        )
-      )
-
-      if (cursor < reply.length) {
-        frame = requestAnimationFrame(stream)
-      } else {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === activeReply
-              ? { ...message, streaming: false }
-              : message
-          )
-        )
-        setActiveReply(null)
-      }
-    }
-
-    frame = requestAnimationFrame(stream)
-    return () => cancelAnimationFrame(frame)
-  }, [activeReply, reduce])
 
   const approveTool = () => {
     clearToolTimers()
@@ -378,19 +329,21 @@ export function ChatAppExample({
     send(value)
   }
 
+  // Sync streamed data into the active assistant message
   useEffect(() => {
-    console.log(data)
-    if (!activeReply) {
-      return
-    }
-
+    if (!activeReply) return
     setMessages((current) =>
-      current.map((m) => (m.id === activeReply ? { ...m, content: data! } : m))
+      current.map((m) =>
+        m.id === activeReply
+          ? { ...m, content: error ? error.message : (data ?? "") }
+          : m
+      )
     )
-  }, [data, activeReply])
+  }, [data, error, activeReply])
 
+  // When loading finishes (entire stream is done), mark message complete
   useEffect(() => {
-    if (!loading && !error && activeReply && data) {
+    if (!loading && activeReply) {
       setMessages((current) =>
         current.map((m) =>
           m.id === activeReply ? { ...m, streaming: false } : m
@@ -399,7 +352,7 @@ export function ChatAppExample({
       setPending(false)
       setActiveReply(null)
     }
-  }, [loading, error, data, activeReply])
+  }, [loading, activeReply])
 
   const stop = () => {
     clearChatTimers()
@@ -760,13 +713,17 @@ export function ChatAppExample({
                   >
                     <MessageBubbleContent>
                       {message.from === "assistant" ? (
-                        <StreamingResponse
-                          status={message.streaming ? "streaming" : "complete"}
-                          showActions={!message.streaming}
-                          copyText={message.content}
-                        >
-                          {message.content}
-                        </StreamingResponse>
+                        message.streaming && !message.content ? (
+                          <ThinkingShimmer>Reviewing your direction</ThinkingShimmer>
+                        ) : (
+                          <StreamingResponse
+                            status={message.streaming ? "streaming" : "complete"}
+                            showActions={!message.streaming}
+                            copyText={message.content}
+                          >
+                            {message.content}
+                          </StreamingResponse>
+                        )
                       ) : (
                         message.content
                       )}
@@ -778,17 +735,6 @@ export function ChatAppExample({
                 </MessageContent>
               </Message>
             ))}
-
-            {pending ? (
-              <Message from="assistant" animateIn>
-                <MessageAvatar>
-                  <Bot />
-                </MessageAvatar>
-                <MessageContent>
-                  <ThinkingShimmer>Reviewing your direction</ThinkingShimmer>
-                </MessageContent>
-              </Message>
-            ) : null}
           </MessageGroup>
         </MessageScroller>
 

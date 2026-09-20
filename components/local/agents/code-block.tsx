@@ -66,6 +66,14 @@ export function CodeBlock({
     return line;
   });
 
+  let count = 0;
+
+  function getUpdate() { 
+    count++;
+  }
+
+
+
   useEffect(
     () => () => {
       if (copyTimer.current) window.clearTimeout(copyTimer.current);

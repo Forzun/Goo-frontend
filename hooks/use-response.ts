@@ -9,7 +9,10 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 interface UseResponseResult {
   data: string | undefined
+  /** True from the moment send() is called until the entire stream completes. */
   loading: boolean
+  /** True once the first token has arrived and the stream is actively producing text. */
+  streaming: boolean
   error: Error | null
   send: (prompt: string) => Promise<void>
   stop: () => void
@@ -18,6 +21,7 @@ interface UseResponseResult {
 export function useResponse(model: string): UseResponseResult {
   const [data, setData] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
+  const [streaming, setStreaming] = useState<boolean>(false)
   const [error, setError] = useState<Error | null>(null)
   const acRef = useRef<AbortController | null>(null)
 
@@ -32,9 +36,10 @@ export function useResponse(model: string): UseResponseResult {
       const ac = new AbortController()
       acRef.current = ac
       let output = ""
-      let gotFirstToken = false
+      let started = false
 
       setLoading(true)
+      setStreaming(false)
       setError(null)
       setData("")
 
@@ -43,15 +48,15 @@ export function useResponse(model: string): UseResponseResult {
           signal: ac.signal,
         })) {
           if (ac.signal.aborted) return
-          if (!gotFirstToken) {
-            gotFirstToken = true
-            setLoading(false)
+          if (!started) {
+            started = true
+            setStreaming(true)
           }
           output += token
           setData(output)
         }
       } catch (err) {
-        if (ac.signal.aborted) return // cleanup abort — not a real error
+        if (ac.signal.aborted) return
         if (
           err instanceof OllamaConnectionError ||
           err instanceof OllamaResponseError
@@ -61,7 +66,10 @@ export function useResponse(model: string): UseResponseResult {
           setError(err instanceof Error ? err : new Error(String(err)))
         }
       } finally {
-        if (!ac.signal.aborted) setLoading(false)
+        if (!ac.signal.aborted) {
+          setLoading(false)
+          setStreaming(false)
+        }
       }
     },
     [model]
@@ -69,7 +77,7 @@ export function useResponse(model: string): UseResponseResult {
 
   const stop = useCallback(() => acRef.current?.abort(), [])
 
-  useEffect(() => () => acRef.current?.abort(), [])  
+  useEffect(() => () => acRef.current?.abort(), [])
 
-  return { data, loading, error, send , stop}
+  return { data, loading, streaming, error, send, stop }
 }

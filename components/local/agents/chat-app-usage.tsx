@@ -79,6 +79,8 @@ import {
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
 import { useResponse } from "@/hooks/use-response"
+import { parseSegmentsStreaming } from "@/lib/parseCodeBlock"
+import ParsedMessage from "./parsed-message"
 
 const resources: SidebarResource[] = [
   {
@@ -143,8 +145,6 @@ const approvalQuestions: ApprovalCardQuestion[] = [
     customPlaceholder: "Add another release instruction…",
   },
 ]
-
-
 
 interface AddedMessage {
   id: string
@@ -302,8 +302,6 @@ export function ChatAppExample({
     ]
   }, [toolStatus])
 
-
-
   const approveTool = () => {
     clearToolTimers()
     setToolStatus("approving")
@@ -332,6 +330,7 @@ export function ChatAppExample({
   // Sync streamed data into the active assistant message
   useEffect(() => {
     if (!activeReply) return
+
     setMessages((current) =>
       current.map((m) =>
         m.id === activeReply
@@ -468,7 +467,7 @@ export function ChatAppExample({
               </MessageContent>
             </Message>
 
-            <Message from="assistant">
+            {/* <Message from="assistant">
               <MessageAvatar>
                 <Bot />
               </MessageAvatar>
@@ -516,7 +515,7 @@ export function ChatAppExample({
                   collapseOnComplete={false}
                 />
               </MessageContent>
-            </Message>
+            </Message> */}
 
             <Message from="assistant">
               <MessageAvatar placeholder />
@@ -714,15 +713,15 @@ export function ChatAppExample({
                     <MessageBubbleContent>
                       {message.from === "assistant" ? (
                         message.streaming && !message.content ? (
-                          <ThinkingShimmer>Reviewing your direction</ThinkingShimmer>
+                          <ThinkingShimmer>
+                            Reviewing your direction
+                          </ThinkingShimmer>
                         ) : (
-                          <StreamingResponse
-                            status={message.streaming ? "streaming" : "complete"}
+                          <ParsedMessage 
+                            content={message.content}
+                            streaming={message.streaming ?? true}
                             showActions={!message.streaming}
-                            copyText={message.content}
-                          >
-                            {message.content}
-                          </StreamingResponse>
+                          />
                         )
                       ) : (
                         message.content

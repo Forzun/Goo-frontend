@@ -9,7 +9,7 @@ interface NavItem {
 const navbar: NavItem[] = [
   {
     label: "Docs",
-    href: "http://localhost:3000/docs/manual/manual-instation",
+    href: "/docs",
   },
   {
     label: "Models",

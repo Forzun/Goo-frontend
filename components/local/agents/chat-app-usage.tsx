@@ -82,6 +82,8 @@ import { useResponse } from "@/hooks/use-response"
 import { parseSegmentsStreaming } from "@/lib/parseCodeBlock"
 import ParsedMessage from "./parsed-message"
 
+export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
+
 const resources: SidebarResource[] = [
   {
     id: "release",
@@ -217,7 +219,7 @@ function GeneratedPreview() {
   )
 }
 
-function AssistantIdentity({ label = "beUI Agent" }: { label?: string }) {
+function AssistantIdentity({ label = "Goo" }: { label?: string }) {
   return (
     <MessageHeader>
       <span>{label}</span>
@@ -449,106 +451,6 @@ export function ChatAppExample({
           contentClassName="mx-auto min-h-full w-full max-w-3xl"
         >
           <MessageGroup spacing="default">
-            <Message from="user">
-              <MessageAvatar>
-                <User />
-              </MessageAvatar>
-              <MessageContent>
-                <MessageHeader>
-                  <span>You</span>
-                  <span>10:24</span>
-                </MessageHeader>
-                <MessageBubble variant="solid">
-                  <MessageBubbleContent>
-                    Audit the checkout flow, fix the validation gap, and prepare
-                    a release-ready patch.
-                  </MessageBubbleContent>
-                </MessageBubble>
-              </MessageContent>
-            </Message>
-
-            {/* <Message from="assistant">
-              <MessageAvatar>
-                <Bot />
-              </MessageAvatar>
-              <MessageContent className="gap-3">
-                <MessageHeader>
-                  <span>beUI Agent</span>
-                  <span>10:24</span>
-                </MessageHeader>
-                <AgentActivity
-                  status="complete"
-                  duration={6}
-                  defaultOpen
-                  collapseOnComplete={false}
-                  items={[
-                    {
-                      id: "reason",
-                      type: "text",
-                      content:
-                        "Tracing the checkout submission path and validation boundary.",
-                    },
-                    {
-                      id: "read",
-                      type: "tool",
-                      action: "read",
-                      target: "checkout/submit.ts",
-                    },
-                    {
-                      id: "search",
-                      type: "search",
-                      query: "order validation failures",
-                      results: [
-                        {
-                          id: "result-1",
-                          title: "Agent interface guide",
-                          domain: "beui.dev",
-                          url: "/docs/ai-agents",
-                        },
-                      ],
-                    },
-                  ]}
-                />
-                <TodoList
-                  items={plan}
-                  title="Release plan"
-                  collapseOnComplete={false}
-                />
-              </MessageContent>
-            </Message> */}
-
-            <Message from="assistant">
-              <MessageAvatar placeholder />
-              <MessageContent>
-                <ToolApproval
-                  tool="terminal.run"
-                  title="Run focused checkout checks?"
-                  description="The agent needs permission to run the validation and accessibility suites."
-                  status={toolStatus}
-                  defaultOpen
-                  parameters={[
-                    {
-                      id: "command",
-                      label: "Command",
-                      value: (
-                        <ToolApprovalCode
-                          code="bun test checkout --coverage"
-                          language="bash"
-                        />
-                      ),
-                    },
-                    { id: "scope", label: "Scope", value: "Current workspace" },
-                  ]}
-                  onApprove={approveTool}
-                  onAlwaysAllow={approveTool}
-                  onDeny={() => {
-                    clearToolTimers()
-                    setToolStatus("denied")
-                  }}
-                />
-              </MessageContent>
-            </Message>
-
             {toolStatus === "running" || toolStatus === "complete" ? (
               <Message from="assistant" animateIn>
                 <MessageAvatar placeholder />
@@ -696,6 +598,16 @@ export function ChatAppExample({
               <Message key={message.id} from={message.from} animateIn>
                 {message.from === "assistant" ? (
                   <MessageAvatar>
+                    {/* <span
+                      style={{
+                        ...pixel,
+                        fontSize: "25px",
+                        color: "#968d88",
+                        lineHeight: 1,
+                      }}
+                    >
+                      G
+                    </span> */}
                     <Bot />
                   </MessageAvatar>
                 ) : (
@@ -705,7 +617,7 @@ export function ChatAppExample({
                 )}
                 <MessageContent>
                   {message.from === "assistant" ? (
-                    <AssistantIdentity label="beUI Agent" />
+                    <AssistantIdentity label="Local Agent" />
                   ) : null}
                   <MessageBubble
                     variant={message.from === "user" ? "solid" : "soft"}
@@ -717,7 +629,7 @@ export function ChatAppExample({
                             Reviewing your direction
                           </ThinkingShimmer>
                         ) : (
-                          <ParsedMessage 
+                          <ParsedMessage
                             content={message.content}
                             streaming={message.streaming ?? true}
                             showActions={!message.streaming}

@@ -14,7 +14,7 @@ export interface ConversationMetadata {
     updatedAt: string; 
     messageCount: number; 
     userMessageCount: number; 
-   assistantMessageCount: number; 
+    assistantMessageCount: number; 
 }
 
 export interface Conversation {
@@ -22,16 +22,28 @@ export interface Conversation {
     title: string;
     projectId: string;
     relativePath: string; 
-    messages: Message[]; 
+    messages: ConversationMessage[]; 
     metaData: ConversationMetadata
 }
 
-export interface Message {
+export interface ConversationMessage {
     id: string;
     role: "user" | "assistant" | "system"; 
     content: string;
     createdAt: string
 }
+
+export interface ConversationData {
+  id: string
+  title: string
+  projectId: string
+  createdAt: string
+  updatedAt: string
+  messageCount: number
+  userMessageCount: number
+  assistantMessageCount: number
+  messages: ConversationMessage[]
+} 
 
 export interface Tag { 
     id: string; 

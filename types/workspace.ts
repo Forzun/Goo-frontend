@@ -1,4 +1,10 @@
 
+export interface WorkspaceConfig { 
+    version: 1;
+    name: string; 
+    createdAt: string
+}
+
 export interface Project { 
     id: string;
     name: string;

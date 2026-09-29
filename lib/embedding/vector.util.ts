@@ -2,14 +2,14 @@ export function float32ToBlob(array: Float32Array): Uint8Array {
   return new Uint8Array(array.buffer, array.byteOffset, array.length)
 }
 
-export function blobToFloa32(blob: Uint8Array): Float32Array {
+export function blobToFloat32(blob: Uint8Array): Float32Array {
   const copy = new Uint8Array(blob)
   return new Float32Array(copy.buffer)
 }
 
-export function cosineSimilarity(a: Float32Array  , b: Float32Array): number { 
-    
-    if(a.length !== b.length) { 
+export function cosineSimilarity(a: Float32Array  , b: Float32Array): number {
+
+    if(a.length !== b.length) {
         throw new Error(`Dimension mismatch: ${a.length} vs ${b.length}`)
     }
 
@@ -29,5 +29,3 @@ export function cosineSimilarity(a: Float32Array  , b: Float32Array): number {
 
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
-
-

@@ -70,7 +70,7 @@ export class WorkspaceService {
 
     // const safeBytes = new Uint8Array(bytes)
     const w = await fh.createWritable();
-    await w.write(bytes as Uint8Array<ArrayBuffer>);
+    await w.write(bytes);
     await w.close();
   }
 

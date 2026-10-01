@@ -63,4 +63,3 @@ export class EmbeddingRepository {
     return scored.sort((a, b) => b.score - a.score).slice(0, limit)
   }
 }
-

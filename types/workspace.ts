@@ -1,40 +1,40 @@
 
-export interface WorkspaceConfig { 
+export interface WorkspaceConfig {
     version: 1;
-    name: string; 
+    name: string;
     createdAt: string
 }
 
-export interface Project { 
+export interface Project {
     id: string;
     name: string;
-    relativePath: string; 
-    createdAt: string; 
+    relativePath: string;
+    createdAt: string;
     updatedAt: string
 }
 
-export interface ConversationMetadata { 
-    id: string; 
+export interface ConversationMetadata {
+    id: string;
     title: string;
     createdAt:string;
-    updatedAt: string; 
-    messageCount: number; 
-    userMessageCount: number; 
-    assistantMessageCount: number; 
+    updatedAt: string;
+    messageCount: number;
+    userMessageCount: number;
+    assistantMessageCount: number;
 }
 
 export interface Conversation {
-    id: string; 
+    id: string;
     title: string;
     projectId: string;
-    relativePath: string; 
-    messages: ConversationMessage[]; 
+    relativePath: string;
+    messages: ConversationMessage[];
     metaData: ConversationMetadata
 }
 
 export interface ConversationMessage {
     id: string;
-    role: "user" | "assistant" | "system"; 
+    role: "user" | "assistant" | "system";
     content: string;
     createdAt: string
 }
@@ -49,28 +49,25 @@ export interface ConversationData {
   userMessageCount: number
   assistantMessageCount: number
   messages: ConversationMessage[]
-} 
+}
 
-export interface Tag { 
-    id: string; 
-    name: string; 
+export interface Tag {
+    id: string;
+    name: string;
     createdAt: string
 }
 
 
-export interface DailyNote { 
-    date: string; 
-    content: string; 
-} 
-
-
-export interface FileIndexEntry { 
-    id: string;
-    relativePath: string
-    type: string; 
-    size: number
-    modifiedAt: string; 
+export interface DailyNote {
+    date: string;
+    content: string;
 }
 
 
-
+export interface FileIndexEntry {
+    id: string;
+    relativePath: string
+    type: string;
+    size: number
+    modifiedAt: string;
+}

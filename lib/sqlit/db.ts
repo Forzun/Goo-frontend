@@ -122,7 +122,7 @@ function openDatabase(SQL: SqlJsStatic, bytes: Uint8Array): Database {
   }
 }
 
-export function exportDb(): Uint8Array{ 
+export function exportDb(): Uint8Array {
     if (!dbInstance) throw new Error("DB not initialized");
     return dbInstance.export()
 }

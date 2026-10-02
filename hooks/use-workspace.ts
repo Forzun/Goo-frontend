@@ -33,7 +33,25 @@ export function useWorkspace() {
   useEffect(() => {
     workspaceService.open().then((result) => {
       if (result === "restored") {
-        refresh();
+        workspaceService.fs.readConfig().then((config) => {
+          if (!config) {
+            setStatus((s) => {
+              return {
+                ...s,
+                status: "no-workspace"
+              }
+            })
+          } else {
+            refresh();
+          }
+        }).catch(() => {
+          setStatus((s) => {
+            return {
+              ...s,
+              status: "no-workspace"
+            }
+          })
+        })
       } else {
         setStatus((s) => {
           return {
@@ -42,7 +60,16 @@ export function useWorkspace() {
           }
         })
       }
-    })
+    }).catch((error) => {
+      // add toast here
+      // console.error("Failed to open workspace:", error)
+      setStatus((s) => {
+        return {
+          ...s,
+          status: "no-workspace"
+        }
+      })
+      })
   },[])
 
   const selectWorkspace = useCallback(async (name: string) => {

@@ -25,8 +25,8 @@ export default function Page() {
       }
     }
 
-    if (ws.status === "loading") {
-      return <div className="flex h-screen items-center justify-center">Loading…</div>;
+  if (ws.status === "loading") {
+    return <div className="flex h-screen items-center justify-center">Loading… </div>;
     }
 
     if (ws.status === "no-workspace") {
@@ -66,10 +66,8 @@ export default function Page() {
               </p>
             </div>
           )}
-
         </div>
       );
-
     }
 
     return (
@@ -101,6 +99,7 @@ export default function Page() {
                       {c.title}
                     </div>
                   ))}
+
                   <button
                     className="text-xs text-primary"
                     onClick={() => {

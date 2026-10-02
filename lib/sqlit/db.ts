@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS embeddings (
 CREATE INDEX IF NOT EXISTS idx_embeddings_source ON embeddings(source_type, source_id);
 
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_conversations_project ON conversations(project_id);     
+CREATE INDEX IF NOT EXISTS idx_conversations_project ON conversations(project_id);
 `
 
 function enableForeignKey(db: Database): void {
@@ -81,7 +81,7 @@ function enableForeignKey(db: Database): void {
 export async function getDb(): Promise<Database> {
   if (dbInstance) return dbInstance
   const SQL = await initSqlJs({
-    locateFile: (file: string) => `/${file}`, // serves from /public/sql-wasm.wasm
+    locateFile: () => "/sql-wasm.wasm"
   })
   dbInstance = new SQL.Database()
   enableForeignKey(dbInstance);
@@ -126,5 +126,3 @@ export function exportDb(): Uint8Array {
     if (!dbInstance) throw new Error("DB not initialized");
     return dbInstance.export()
 }
-
-

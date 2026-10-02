@@ -13,23 +13,30 @@ export class FileSystemService {
 
   async restoreWorkspace(): Promise<FileSystemDirectoryHandle | null> {
     const store = await getHandleFromId("localgoo-workspace")
+    console.log("inside store 1", store)
     if (!store || store.kind !== "directory") {
       return null
     }
     const handle = store as FileSystemDirectoryHandle
-    let permission = await handle.queryPermission({ mode: "readwrite" })
+    const permission = await handle.queryPermission({ mode: "readwrite" })
+
     if (permission !== "granted") {
-      try {
-        permission = await handle.requestPermission({ mode: "readwrite" })
-      } catch {
-        return null
-      }
-    }
-    if (permission !== "granted") {
+      await deleteHandleFromDb("localgoo-workspace");
       return null
     }
-    this.rootHandle = handle
-    return this.rootHandle
+
+    try {
+      for await (const _ of handle.values()) {
+        break;
+      }
+    } catch(err) {
+      console.warn("Stored workspace no longer exists:", err);
+      await deleteHandleFromDb("localgoo-workspace");
+      return null
+    }
+
+    this.rootHandle = handle;
+    return handle;
   }
 
   async persistWorkspaceHandle(): Promise<void> {
@@ -211,5 +218,15 @@ async function getHandleFromId(key: string): Promise<FileSystemHandle | null> {
     const req = tx.objectStore(IDB_STORE).get(key)
     req.onsuccess = () => res(req.result as FileSystemHandle | null)
     req.onerror = () => rej(req.error)
+  })
+}
+
+export async function deleteHandleFromDb(key: string): Promise<void> {
+  const db = await idb()
+  return new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).delete(key)
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error)
   })
 }

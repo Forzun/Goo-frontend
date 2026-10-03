@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export default function Page() {
   const ws = useWorkspace();
-  const [workspaceName, setWorkspaceName] = useState("My Workspace");
+  const [workspaceName, setWorkspaceName] = useState("Untitled");
   const [error , setError] = useState<string | null>(null)
 
   const fsApiAvailable = typeof window !== "undefined" && "showDirectoryPicker" in window

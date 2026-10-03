@@ -1,13 +1,17 @@
 "use client"
 
+import GetLocalLocation from "@/components/get-local";
 import { ChatAppExample } from "@/components/local/agents/chat-app-usage";
-import { useResponse } from "@/hooks/use-response";
+import { useWorkspace } from "@/hooks/use-workspace";
 
 export default function Page() {
+  const {status} = useWorkspace()
 
   return (
     <div className="h-full w-full">
-      <ChatAppExample />
+      {status == "no-workspace" ? < GetLocalLocation /> :
+        <ChatAppExample />
+      }
     </div>
   )
 }

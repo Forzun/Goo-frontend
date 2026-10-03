@@ -1,31 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ExpandingArrowButton } from "./local/motion/expanding-arrow-button";
+import { motion } from "motion/react";
 
 type MenuPos = { x: number; y: number } | null;
 
-const MENU_ITEMS = ["Open", "Rename", "Get Info", "Move to Trash"];
+const MENU_ITEMS = ["Open", "Rename", "Properties" ,"Quit" ];
 
 function BlueFolder() {
   return (
     <div className="relative h-[72px] w-[128px]" aria-hidden="true">
-      {/* back tab */}
       <div className="absolute -top-[14px] left-0 h-[26px] w-[56px] rounded-t-[9px] bg-[#2f78c9]" />
-      {/* back panel */}
       <div className="absolute inset-0 rounded-[10px] bg-gradient-to-b from-[#3f93e6] to-[#3585d8]" />
-      {/* front panel */}
       <div className="absolute inset-x-0 bottom-0 top-[10px] rounded-[10px] bg-gradient-to-b from-[#6cc3fa] to-[#4fa8f0] shadow-[0_2px_6px_rgba(0,0,0,0.35)]">
-        {/* soft inner highlight near the bottom edge */}
         <div className="absolute inset-x-3 bottom-[6px] h-px rounded-full bg-white/25" />
       </div>
     </div>
   );
 }
 
-export default function Page() {
+export default function Folder() {
   const [menu, setMenu] = useState<MenuPos>(null);
+  const [isFocused, setIsFocused] = useState(false);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const folderRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const close = useCallback(() => setMenu(null), []);
 
@@ -69,7 +69,7 @@ export default function Page() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#141414] text-white">
+    <main className="flex flex-col min-h-screen items-center justify-center ">
       <div className="flex flex-col items-center">
         <button
           ref={folderRef}
@@ -80,18 +80,33 @@ export default function Page() {
           onPointerLeave={cancelPress}
           onPointerCancel={cancelPress}
           onKeyDown={onKeyDown}
-          className="rounded-xl p-4 outline-none focus-visible:ring-2 focus-visible:ring-[#4fa8f0]/70 [-webkit-touch-callout:none] select-none"
+          className="rounded-xl px-4 py-2 outline-none [-webkit-touch-callout:none] select-none"
           aria-haspopup="menu"
           aria-label="Folder. Right click, long-press, or press Shift F10 for options"
         >
           <BlueFolder />
         </button>
 
-        <p className="mt-5 text-[15px] font-semibold tracking-tight">
-          Right click on me
-        </p>
-        <p className="mt-2 text-[12px] text-neutral-500">
-          or long-press · Shift + F10
+        <div className="relative w-[128px]">
+  <input
+    ref={inputRef}
+    className="text-[15px] text-center border-none font-semibold tracking-tight outline-none bg-transparent w-full h-[24px] relative z-10"
+    placeholder=""
+    onFocus={() => setIsFocused(true)}
+    onBlur={() => setIsFocused(false)}
+    style={{ caretColor: "#3585d8" }}
+  />
+  <motion.div
+    className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+    animate={{ opacity: isFocused ? 0 : 1 }}
+    transition={{ duration: 0.15 }}
+  >
+    <PopPlaceholder />
+  </motion.div>
+</div>
+
+        <p className="mt-1 text-[12px] text-neutral-500">
+          long-press · Shift + F10
         </p>
       </div>
 
@@ -115,6 +130,42 @@ export default function Page() {
           ))}
         </ul>
       )}
+
+      {/* Start Button*/}
+      <div className="p-6 mt-2 scale-90 ">
+        <ExpandingArrowButton>Start</ExpandingArrowButton>
+      </div>
     </main>
+  );
+}
+
+function PopPlaceholder() {
+  const fullPlaceholder = "Untitled";
+  const [visibleChars, setVisibleChars] = useState<number[]>([]);
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    fullPlaceholder.split("").forEach((_, i) => {
+      const t = setTimeout(() => {
+        setVisibleChars((prev) => [...prev, i]);
+      }, i * 100);
+      timers.push(t);
+    });
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <span className="text-[15px] font-semibold tracking-tight select-none pointer-events-none text-neutral-400" aria-hidden="true">
+      {fullPlaceholder.split("").map((char, i) => (
+        <motion.span
+          key={i}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={visibleChars.includes(i) ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 15 }}
+        >
+          {char}
+        </motion.span>
+      ))}
+    </span>
   );
 }

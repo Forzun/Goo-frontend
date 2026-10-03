@@ -54,11 +54,11 @@
     --color-input-bg: var(--input-bg);
     --color-btn-bg: var(--btn-bg);
     --color-badge-bg: var(--badge-bg);
-  
+
     --color-btn-border: var(--btn-border);
     --color-divider: var(--divider);
-    
- 
+
+
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
@@ -81,8 +81,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-    
- 
+
+  --color-button: #6cc3fa;
+  --color-button-dim: #3A98DED9;
   }
 
 :root {
@@ -131,13 +132,13 @@
     /* quick-action buttons */
     --badge-bg: #101e29;
     /* "Upgrade your plan" badge */
-  
+
     /* ── Borders ─────────────────────────────── */
     --btn-border: #2f2f2f;
     /* button outlines */
     --divider: #262626;
     /* subtle separators */
-  
+
     /* ── Text colors ─────────────────────────── */
     --text-primary: #d9d9d9;
     /* KIMI logo, headings */
@@ -151,7 +152,7 @@
     /* section labels (Projects, Chats) */
     --text-badge: #0086fa;
     /* blue upgrade badge text */
-  
+
     /* ── Font sizes (measured from screenshot) ── */
     --fs-logo: 48px;
     /* KIMI wordmark (35px glyph height) */
@@ -163,6 +164,7 @@
     /* section labels, button chips */
     --fs-caption: 12px;
     /* hints, kbd shortcuts */
+
 }
 
 .dark {

@@ -1,12 +1,12 @@
-import { workspaceService } from "@/features/workspace/workspace-service";
-import { Conversation, Project } from "@/types/workspace";
-import { useCallback, useEffect, useState } from "react";
+import { workspaceService } from "@/features/workspace/workspace-service"
+import { Conversation, Project } from "@/types/workspace"
+import { useCallback, useEffect, useState } from "react"
 
 interface WorkspaceStatus {
-  status: "loading" | "no-workspace" | "ready",
-  projects: Project[],
-  activeProjectId: string | null,
-  conversations: Conversation[],
+  status: "loading" | "no-workspace" | "ready"
+  projects: Project[]
+  activeProjectId: string | null
+  conversations: Conversation[]
 }
 
 export function useWorkspace() {
@@ -14,93 +14,110 @@ export function useWorkspace() {
     status: "loading",
     projects: [],
     activeProjectId: null,
-    conversations: []
+    conversations: [],
   })
 
   const refresh = useCallback(() => {
-    const projects = workspaceService.listProjects();
-    const activeProjectId = projects[0]?.id ?? null;
-    const conversations = activeProjectId ? workspaceService.listConversations(activeProjectId) : [];
+    const projects = workspaceService.listProjects()
+    const activeProjectId = projects[0]?.id ?? null
+    const conversations = activeProjectId
+      ? workspaceService.listConversations(activeProjectId)
+      : []
 
     setStatus({
       status: "ready",
       projects: projects,
       activeProjectId: activeProjectId,
-      conversations: conversations
+      conversations: conversations,
     })
   }, [])
 
   useEffect(() => {
-    workspaceService.open().then((result) => {
-      if (result === "restored") {
-        workspaceService.fs.readConfig().then((config) => {
-          if (!config) {
-            setStatus((s) => {
-              return {
-                ...s,
-                status: "no-workspace"
+    workspaceService
+      .open()
+      .then((result) => {
+        if (result === "restored") {
+          workspaceService.fs
+            .readConfig()
+            .then((config) => {
+              if (!config) {
+                setStatus((s) => {
+                  return {
+                    ...s,
+                    status: "no-workspace",
+                  }
+                })
+              } else {
+                refresh()
               }
             })
-          } else {
-            refresh();
-          }
-        }).catch(() => {
+            .catch(() => {
+              setStatus((s) => {
+                return {
+                  ...s,
+                  status: "no-workspace",
+                }
+              })
+            })
+        } else {
           setStatus((s) => {
             return {
               ...s,
-              status: "no-workspace"
+              status: "no-workspace",
             }
           })
-        })
-      } else {
+        }
+      })
+      .catch((error) => {
+        // add toast here
+        // console.error("Failed to open workspace:", error)
         setStatus((s) => {
           return {
             ...s,
-            status: "no-workspace"
+            status: "no-workspace",
           }
         })
-      }
-    }).catch((error) => {
-      // add toast here
-      // console.error("Failed to open workspace:", error)
-      setStatus((s) => {
-        return {
-          ...s,
-          status: "no-workspace"
-        }
       })
-      })
-  },[])
+  }, [])
 
-  const selectWorkspace = useCallback(async (name: string) => {
-    await workspaceService.selectAndInit(name);
-    refresh();
-  },[refresh])
+  const selectWorkspace = useCallback(
+    async (name: string) => {
+      await workspaceService.selectAndInit(name)
+      refresh()
+    },
+    [refresh]
+  )
 
-  const createProject = useCallback(async(name: string) => {
-    await workspaceService.createProject(name);
-    refresh()
-  }, [refresh])
+  const createProject = useCallback(
+    async (name: string) => {
+      await workspaceService.createProject(name)
+      refresh()
+    },
+    [refresh]
+  )
 
   const selectProject = useCallback(async (id: string) => {
     setStatus((s) => {
       return {
         ...s,
         activeProjectId: id,
-        conversations: workspaceService.listConversations(id)
-      }
-    })
-  },[])
-
-  const createConversation = useCallback(async (projectId: string , title: string) => {
-    await workspaceService.createConversation(projectId, title)
-    setStatus((s) => {
-      return {
-        ...s,
-        conversations: workspaceService.listConversations(projectId)
+        conversations: workspaceService.listConversations(id),
       }
     })
   }, [])
+
+  const createConversation = useCallback(
+    async (projectId: string, title: string) => {
+      await workspaceService.createConversation(projectId, title)
+      setStatus((s) => {
+        return {
+          ...s,
+          conversations: workspaceService.listConversations(projectId),
+        }
+      })
+    },
+    []
+  )
 
   return {
     ...status,
@@ -108,6 +125,6 @@ export function useWorkspace() {
     selectProject,
     selectWorkspace,
     createProject,
-    createConversation
+    createConversation,
   }
 }

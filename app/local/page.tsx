@@ -9,8 +9,7 @@ export default function Page() {
 
   return (
     <div className="h-full w-full">
-      {status == "no-workspace" ? < GetLocalLocation /> :
-        <ChatAppExample />
+      {status == "no-workspace" ? < GetLocalLocation /> : status === "loading" ? "": <ChatAppExample />
       }
     </div>
   )

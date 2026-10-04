@@ -23,6 +23,7 @@ export interface ExpandingArrowButtonProps extends Omit<
   children: ReactNode;
   accentClassName?: string;
   labelClassName?: string;
+  swipeHint?: boolean;
 }
 
 const ARROW_OPACITY = [1, 0.78, 0.54, 0.32, 0.16] as const;
@@ -53,6 +54,7 @@ export const ExpandingArrowButton = forwardRef<
     className,
     accentClassName,
     labelClassName,
+    swipeHint,
     disabled,
     onMouseEnter,
     onMouseLeave,
@@ -111,7 +113,17 @@ export const ExpandingArrowButton = forwardRef<
       <motion.span
         layout="size"
         aria-hidden="true"
-        transition={layoutTransition}
+        animate={{
+          x: swipeHint && !active ? [0, 8, 0] : 0,
+        }}
+        transition={
+          swipeHint && !active
+            ? {
+                x: { repeat: Infinity, duration: 1.5, ease: "easeInOut" },
+                default: layoutTransition,
+              }
+            : layoutTransition
+        }
         style={{
           width: active ? "calc(100% - 12px)" : 52,
           borderRadius: 16,

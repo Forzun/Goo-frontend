@@ -13,7 +13,6 @@ export class FileSystemService {
 
   async restoreWorkspace(): Promise<FileSystemDirectoryHandle | null> {
     const store = await getHandleFromId("localgoo-workspace")
-    console.log("inside store 1", store)
     if (!store || store.kind !== "directory") {
       return null
     }

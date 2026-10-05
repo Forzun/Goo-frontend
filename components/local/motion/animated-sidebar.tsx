@@ -1070,7 +1070,12 @@ export function AnimatedSidebarMenuButton({
         <motion.span
           layoutId={context.layoutId}
           transition={context.reduce ? { duration: 0 } : SPRING_LAYOUT}
-          className="absolute inset-0 rounded-xl bg-muted"
+          className="absolute inset-0 rounded-xl border border-neutral-secondary/10 bg-input-bg text-text-mute
+            transition-colors
+            hover:bg-neutral-800
+            before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit]
+            before:bg-linear-to-b before:from-neutral-300/1 before:to-transparent
+            "
         />
       ) : null}
       {icon ? (
@@ -1127,7 +1132,7 @@ export function AnimatedSidebarMenuButton({
 
   const interactiveClassName = cn(
     "relative flex min-h-9 w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-xl px-3 text-left text-sm font-medium outline-none",
-    "text-muted-foreground transition-colors hover:text-foreground",
+    "text-muted-foreground transition-colors hover:text-forground",
     "focus-visible:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring",
     isActive && "text-foreground",
     disabled && "cursor-not-allowed opacity-40",

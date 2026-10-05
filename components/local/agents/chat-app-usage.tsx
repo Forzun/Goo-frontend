@@ -81,6 +81,7 @@ import { useFetchModels } from "@/hooks/use-models"
 import { useResponse } from "@/hooks/use-response"
 import { parseSegmentsStreaming } from "@/lib/parseCodeBlock"
 import ParsedMessage from "./parsed-message"
+import { useWorkspace } from "@/hooks/use-workspace"
 
 export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
 
@@ -104,7 +105,6 @@ const resources: SidebarResource[] = [
       { id: "components", label: "Component inventory", kind: "file" },
     ],
   },
-  { id: "archive", label: "Archived runs", kind: "folder" },
 ]
 
 const diffLines = [
@@ -231,12 +231,11 @@ function AssistantIdentity({ label = "Goo" }: { label?: string }) {
 export function ChatAppExample({
   className,
 }: Pick<ComponentProps<typeof ChatApp>, "className">) {
-  const reduce = useReducedMotion() ?? false
   const toolTimers = useRef<number[]>([])
   const chatTimers = useRef<number[]>([])
   const approvalTimers = useRef<number[]>([])
   const runId = useRef(0)
-  const [items, setItems] = useState(resources)
+  const [items, setItems] = useState<SidebarResource[]>(resources)
   const [activeResource, setActiveResource] = useState("checkout")
   const [input, setInput] = useState("")
   const [pending, setPending] = useState(false)
@@ -250,6 +249,7 @@ export function ChatAppExample({
   // Custom hooks
   const { models } = useFetchModels()
   const { data, loading, streaming, error, send } = useResponse(model ?? "")
+  const ws = useWorkspace()
 
   const clearToolTimers = useCallback(() => {
     toolTimers.current.forEach(window.clearTimeout)
@@ -333,26 +333,45 @@ export function ChatAppExample({
   useEffect(() => {
     if (!activeReply) return
 
-    setMessages((current) =>
-      current.map((m) =>
-        m.id === activeReply
-          ? { ...m, content: error ? error.message : (data ?? "") }
-          : m
+    async function message() {
+      setMessages((current) =>
+        current.map((m) =>
+          m.id === activeReply
+            ? { ...m, content: error ? error.message : (data ?? "") }
+            : m
+        )
       )
-    )
+    }
+
+    message()
   }, [data, error, activeReply])
+
+  // set Project and Conversations 
+  useEffect(() => {
+    if (!ws.projects?.length) return
+    setItems(
+      ws.projects.map((p) => ({
+        id: p.id,
+        label: p.name,
+        kind: "project" as const,
+      }))
+    )
+  }, [ws.projects])
 
   // When loading finishes (entire stream is done), mark message complete
   useEffect(() => {
-    if (!loading && activeReply) {
-      setMessages((current) =>
-        current.map((m) =>
-          m.id === activeReply ? { ...m, streaming: false } : m
+    async function message() {
+      if (!loading && activeReply) {
+        setMessages((current) =>
+          current.map((m) =>
+            m.id === activeReply ? { ...m, streaming: false } : m
+          )
         )
-      )
-      setPending(false)
-      setActiveReply(null)
+        setPending(false)
+        setActiveReply(null)
+      }
     }
+    message()
   }, [loading, activeReply])
 
   const stop = () => {
@@ -381,15 +400,31 @@ export function ChatAppExample({
             <AnimatedSidebarGroupContent>
               <AnimatedSidebarMenu className="gap-1">
                 {[
-                  { label: "New task", icon: MessageSquarePlus },
+                  {
+                    label: "New task",
+                    icon: MessageSquarePlus,
+                    active: true,
+                    badge: (
+                      <span className="flex justify-center gap-2 py-3">
+                        <kbd className="inline-flex h-5 scale-130 items-center rounded border border-border/60 bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                          ⌘
+                        </kbd>
+                        <kbd className="inline-flex h-5 scale-130 items-center rounded border border-border/60 bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                          K
+                        </kbd>
+                      </span>
+                    ),
+                  },
                   { label: "Search", icon: Search },
                   { label: "Runs", icon: Clock3 },
-                ].map(({ label, icon: Icon }) => (
+                ].map(({ label, icon: Icon, active, badge }) => (
                   <AnimatedSidebarMenuItem key={label}>
                     <AnimatedSidebarMenuButton
+                      isActive={active}
                       icon={<Icon className="size-4" />}
                       onSelect={() => {}}
                       className="font-normal"
+                      badge={badge}
                     >
                       {label}
                     </AnimatedSidebarMenuButton>

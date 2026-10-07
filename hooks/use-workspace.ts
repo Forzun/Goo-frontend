@@ -1,11 +1,14 @@
 import { workspaceService } from "@/features/workspace/workspace-service"
 import { Conversation, Project } from "@/types/workspace"
+import { pid } from "process"
 import { useCallback, useEffect, useState } from "react"
 
 interface WorkspaceStatus {
   status: "loading" | "no-workspace" | "ready"
   projects: Project[]
-  activeProjectId: string | null
+  activeProjectId: {
+    projectId: string
+  }[] | null,
   conversations: Conversation[]
 }
 
@@ -19,7 +22,7 @@ export function useWorkspace() {
 
   const refresh = useCallback(() => {
     const projects = workspaceService.listProjects()
-    const activeProjectId = projects[0]?.id ?? null
+    const activeProjectId = null;
     const conversations = activeProjectId
       ? workspaceService.listConversations(activeProjectId)
       : []
@@ -27,7 +30,7 @@ export function useWorkspace() {
     setStatus({
       status: "ready",
       projects: projects,
-      activeProjectId: activeProjectId,
+      activeProjectId: null,
       conversations: conversations,
     })
   }, [])
@@ -98,10 +101,16 @@ export function useWorkspace() {
 
   const selectProject = useCallback(async (id: string) => {
     setStatus((s) => {
+      const current = s.activeProjectId ?? []
+      const next = current.some(x => x.projectId === id)
+        ? current.filter(x => x.projectId !== id)
+        : [...current , {projectId: id}]
+
+      const conversations = next.flatMap(pid => workspaceService.listConversations(pid.projectId))
       return {
         ...s,
-        activeProjectId: id,
-        conversations: workspaceService.listConversations(id),
+        activeProjectId: next,
+        conversations: conversations,
       }
     })
   }, [])

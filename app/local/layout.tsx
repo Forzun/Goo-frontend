@@ -2,8 +2,12 @@ import { Geist, Geist_Mono, VT323, Cormorant } from "next/font/google"
 
 import "./local.css"
 import { cn } from "@/lib/utils"
+import GetLocalLocation from "@/components/get-local"
+import { useWorkspace } from "@/hooks/use-workspace"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
+const {status} = useWorkspace()
+
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -39,10 +43,11 @@ export default function RootLayout({
         cormorant.variable
       )}
     >
-      <body  suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        {status == "no-workspace" ? < GetLocalLocation /> : status === "loading" ? "": <ChatAppExample />
+        }
       {children}
       </body>
     </html>
   )
 }
-

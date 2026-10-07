@@ -71,59 +71,8 @@ export default function Page() {
     }
 
     return (
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-sidebar p-4">
-          <h2 className="mb-4 font-semibold">LocalGoo</h2>
-          <button
-            className="mb-2 w-full rounded border px-2 py-1 text-sm"
-            onClick={() => {
-              const name = prompt("Project name?");
-              if (name) ws.createProject(name);
-            }}
-          >
-            + New Project
-          </button>
-          {ws.projects.map((p) => (
-            <div key={p.id}>
-              <button
-                className={`w-full rounded px-2 py-1 text-left text-sm ${ws.activeProjectId === p.id ? "bg-muted" : ""}`}
-                onClick={() => ws.selectProject(p.id)}
-              >
-                {p.name}
-              </button>
-              {ws.activeProjectId === p.id && (
-                <div className="ml-4 mt-1 space-y-1">
-                  {ws.conversations.map((c) => (
-                    <div key={c.id} className="truncate text-xs text-muted-foreground">
-                      {c.title}
-                    </div>
-                  ))}
+      <div>
 
-                  <button
-                    className="text-xs text-primary"
-                    onClick={() => {
-                      const t = prompt("Conversation title?");
-                      if (t) ws.createConversation(p.id, t);
-                    }}
-                  >
-                    + New conversation
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </aside>
-
-        {/* Main area */}
-        <main className="flex-1 p-6">
-          <h1 className="text-xl font-semibold">
-            {ws.projects.find((p) => p.id === ws.activeProjectId)?.name ?? "Select a project"}
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Select a conversation or create a new one.
-          </p>
-        </main>
       </div>
     );
   }

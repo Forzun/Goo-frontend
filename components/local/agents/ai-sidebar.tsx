@@ -12,6 +12,7 @@ import {
   type LucideIcon,
   MoreHorizontal,
   Pencil,
+  Plus,
   Undo2,
 } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
@@ -34,7 +35,7 @@ import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease"
 import { useTouchCapable } from "@/hooks/use-touch-capable"
 import { cn } from "@/lib/utils"
 
-export type SidebarResourceKind = "folder" | "project" | "file" | "bookmark"
+export type SidebarResourceKind = "folder" | "project" | "file" | "bookmark" | "action"
 
 export interface SidebarResource {
   id: string
@@ -251,8 +252,10 @@ function defaultIcon(item: SidebarResource, expanded: boolean) {
         : Folder
       : item.kind === "bookmark"
         ? Bookmark
+        : item.kind === "action"
+        ? Plus
         : FileText
-  return <Icon className="size-4" />
+  return <Icon className="size-4 stroke-current fill-none" />
 }
 
 function MarqueeLabel({
@@ -475,8 +478,12 @@ function ResourceRow({
           row.item.disabled
         )
           return
-        if (acceptsChildren) onToggle()
-        else onSelect()
+        if (acceptsChildren) {
+          onToggle()
+          onSelect()
+        } else {
+          onSelect()
+        }
       }}
       onDoubleClick={(event) => {
         if (acceptsChildren || row.item.disabled) return
@@ -513,7 +520,7 @@ function ResourceRow({
     >
       <span
         aria-hidden="true"
-        className="grid size-5 shrink-0 place-items-center"
+        className="group-icon grid size-5 shrink-0 place-items-center transition-transform duration-200 group-hover/resource:scale-110 group-hover/resource:text-primary"
       >
         {renderIcon?.(row.item) ?? defaultIcon(row.item, expanded)}
       </span>
@@ -623,6 +630,7 @@ export function AISidebar({
 
   const flat = useMemo(
     () => flattenResources(renderedItems, expandedIds),
+
     [expandedIds, renderedItems]
   )
 

@@ -7,11 +7,11 @@ import {
   MessageSquarePlus,
   PanelLeft,
   Paperclip,
+  Plus,
   Search,
   User,
   WandSparkles,
 } from "lucide-react"
-import { useReducedMotion } from "motion/react"
 import {
   type ComponentProps,
   useCallback,
@@ -20,7 +20,6 @@ import {
   useRef,
   useState,
 } from "react"
-import { AgentActivity } from "@/components/local/agents/agent-activity"
 import {
   AISidebar,
   type SidebarResource,
@@ -79,7 +78,6 @@ import {
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
 import { useResponse } from "@/hooks/use-response"
-import { parseSegmentsStreaming } from "@/lib/parseCodeBlock"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
 
@@ -235,7 +233,7 @@ export function ChatAppExample({
   const chatTimers = useRef<number[]>([])
   const approvalTimers = useRef<number[]>([])
   const runId = useRef(0)
-  const [items, setItems] = useState<SidebarResource[]>(resources)
+  const [items, setItems] = useState<SidebarResource[]>([])
   const [activeResource, setActiveResource] = useState("checkout")
   const [input, setInput] = useState("")
   const [pending, setPending] = useState(false)
@@ -250,6 +248,8 @@ export function ChatAppExample({
   const { models } = useFetchModels()
   const { data, loading, streaming, error, send } = useResponse(model ?? "")
   const ws = useWorkspace()
+
+  const filterConversation = ws.conversations
 
   const clearToolTimers = useCallback(() => {
     toolTimers.current.forEach(window.clearTimeout)
@@ -346,17 +346,29 @@ export function ChatAppExample({
     message()
   }, [data, error, activeReply])
 
-  // set Project and Conversations 
+  // set Project and Conversations
   useEffect(() => {
     if (!ws.projects?.length) return
     setItems(
       ws.projects.map((p) => ({
         id: p.id,
-        label: p.name,
         kind: "project" as const,
+        label: p.name,
+        children: [
+          ...ws.conversations.filter((c) => c.projectId === p.id).map((con) => ({
+            id: con.id,
+            label: con.title,
+            kind: "file" as const
+          })),
+          {
+            id: `create-conversation-${p.id}`,
+            label: "New Conversation",
+            kind: "action" as const
+          }
+        ]
       }))
     )
-  }, [ws.projects])
+  }, [ws.projects , ws.conversations  , ws.activeProjectId])
 
   // When loading finishes (entire stream is done), mark message complete
   useEffect(() => {
@@ -444,9 +456,14 @@ export function ChatAppExample({
                   items={items}
                   activeId={activeResource}
                   defaultExpandedIds={["release", "design"]}
-                  onActiveChange={setActiveResource}
+                  onActiveChange={(id) => {
+                    setActiveResource(id);
+                    ws.selectProject(id)
+                    // ws.conversations.map((c) => console.log(c))
+                  }}
                   onItemsChange={setItems}
                 />
+
               </div>
               <div
                 aria-hidden="true"

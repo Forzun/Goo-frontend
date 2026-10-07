@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@animateicons/react": "^0.12.0",
     "@base-ui/react": "^1.6.0",
     "@types/mdx": "^2.0.14",
     "@types/wicg-file-system-access": "^2023.10.7",

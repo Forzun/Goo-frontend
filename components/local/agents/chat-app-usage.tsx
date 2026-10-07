@@ -78,9 +78,10 @@ import {
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
 import { useResponse } from "@/hooks/use-response"
+import { useRouter } from "next/navigation"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
-
+import { workspaceService } from "@/features/workspace/workspace-service"
 export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
 
 const resources: SidebarResource[] = [
@@ -229,12 +230,12 @@ function AssistantIdentity({ label = "Goo" }: { label?: string }) {
 export function ChatAppExample({
   className,
 }: Pick<ComponentProps<typeof ChatApp>, "className">) {
+  const router = useRouter()
   const toolTimers = useRef<number[]>([])
   const chatTimers = useRef<number[]>([])
   const approvalTimers = useRef<number[]>([])
   const runId = useRef(0)
   const [items, setItems] = useState<SidebarResource[]>([])
-  const [activeResource, setActiveResource] = useState("checkout")
   const [input, setInput] = useState("")
   const [pending, setPending] = useState(false)
   const [activeReply, setActiveReply] = useState<string | null>(null)
@@ -243,6 +244,7 @@ export function ChatAppExample({
   const [model, setModel] = useState<string | null>()
   const [approvalStatus, setApprovalStatus] =
     useState<ApprovalCardStatus>("pending")
+  const [activeResource, setActiveResource] = useState("checkout")
 
   // Custom hooks
   const { models } = useFetchModels()
@@ -349,26 +351,29 @@ export function ChatAppExample({
   // set Project and Conversations
   useEffect(() => {
     if (!ws.projects?.length) return
-    setItems(
-      ws.projects.map((p) => ({
-        id: p.id,
-        kind: "project" as const,
-        label: p.name,
-        children: [
-          ...ws.conversations.filter((c) => c.projectId === p.id).map((con) => ({
+
+    const newItems = ws.projects.map((p) => ({
+      id: p.id,
+      kind: "project" as const,
+      label: p.name,
+      children: [
+        ...ws.conversations
+          .filter((c) => c.projectId === p.id)
+          .map((con) => ({
             id: con.id,
             label: con.title,
-            kind: "file" as const
+            kind: "file" as const,
           })),
-          {
-            id: `create-conversation-${p.id}`,
-            label: "New Conversation",
-            kind: "action" as const
-          }
-        ]
-      }))
-    )
-  }, [ws.projects , ws.conversations  , ws.activeProjectId])
+        {
+          id: `create-conversation-${p.id}`,
+          label: "New Conversation",
+          kind: "action" as const,
+        },
+      ],
+    }))
+
+    setItems(newItems)
+  }, [ws.projects, ws.activeProjectId])
 
   // When loading finishes (entire stream is done), mark message complete
   useEffect(() => {
@@ -457,13 +462,25 @@ export function ChatAppExample({
                   activeId={activeResource}
                   defaultExpandedIds={["release", "design"]}
                   onActiveChange={(id) => {
-                    setActiveResource(id);
-                    ws.selectProject(id)
-                    // ws.conversations.map((c) => console.log(c))
+                    const project = items.find((p) => p.id == id)
+
+                    if (project) {
+                      ws.selectProject(id)
+                      setActiveResource(id)
+                      return;
+                    }
+
+                    const conversationString = `create-conversation-`
+
+                    if (id.includes(conversationString)) {
+                      // add an input pop up and get the new name
+                    } else {
+                      router.push(`/local/chat/${id}`)
+                    }
+
                   }}
                   onItemsChange={setItems}
                 />
-
               </div>
               <div
                 aria-hidden="true"

@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   Bookmark,
+  FilePlus,
   FileText,
   Folder,
   FolderInput,
@@ -34,6 +35,7 @@ import {
 import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease"
 import { useTouchCapable } from "@/hooks/use-touch-capable"
 import { cn } from "@/lib/utils"
+import { useRouter } from "fumadocs-core/framework"
 
 export type SidebarResourceKind = "folder" | "project" | "file" | "bookmark" | "action"
 
@@ -253,9 +255,10 @@ function defaultIcon(item: SidebarResource, expanded: boolean) {
       : item.kind === "bookmark"
         ? Bookmark
         : item.kind === "action"
-        ? Plus
-        : FileText
-  return <Icon className="size-4 stroke-current fill-none" />
+          ? Plus
+          : FileText
+
+  return <Icon className="size-4" />
 }
 
 function MarqueeLabel({
@@ -397,6 +400,8 @@ function ResourceRow({
   const dropPosition =
     dropTarget?.id === row.item.id ? dropTarget.position : null
 
+  const router = useRouter()
+
   useEffect(() => {
     if (!renaming) return
     skipRenameBlurRef.current = false
@@ -520,7 +525,7 @@ function ResourceRow({
     >
       <span
         aria-hidden="true"
-        className="group-icon grid size-5 shrink-0 place-items-center transition-transform duration-200 group-hover/resource:scale-110 group-hover/resource:text-primary"
+        className="grid size-5 shrink-0 place-items-center"
       >
         {renderIcon?.(row.item) ?? defaultIcon(row.item, expanded)}
       </span>
@@ -555,7 +560,6 @@ function ResourceRow({
           {row.item.label}
         </MarqueeLabel>
       )}
-
       {!renaming && !row.item.disabled ? (
         <MorphPopover open={menuOpen} onOpenChange={onMenuOpenChange}>
           <MorphPopoverTrigger>

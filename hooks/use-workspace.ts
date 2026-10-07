@@ -1,6 +1,5 @@
 import { workspaceService } from "@/features/workspace/workspace-service"
 import { Conversation, Project } from "@/types/workspace"
-import { pid } from "process"
 import { useCallback, useEffect, useState } from "react"
 
 interface WorkspaceStatus {
@@ -102,11 +101,15 @@ export function useWorkspace() {
   const selectProject = useCallback(async (id: string) => {
     setStatus((s) => {
       const current = s.activeProjectId ?? []
+
       const next = current.some(x => x.projectId === id)
         ? current.filter(x => x.projectId !== id)
         : [...current , {projectId: id}]
 
-      const conversations = next.flatMap(pid => workspaceService.listConversations(pid.projectId))
+      const conversations = next.flatMap(
+        pid => workspaceService
+        .listConversations(pid.projectId))
+
       return {
         ...s,
         activeProjectId: next,

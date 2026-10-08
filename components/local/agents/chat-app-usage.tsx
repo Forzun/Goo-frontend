@@ -78,9 +78,10 @@ import {
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
 import { useResponse } from "@/hooks/use-response"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
+import { workspaceService } from "@/features/workspace/workspace-service"
 import { CenterMorphModal, CenterMorphModalContent } from "@/components/local/motion/center-morph-modal"
 import { Input } from "@/components/local/motion/input"
 import { Button } from "@/components/local/motion/button"
@@ -248,7 +249,8 @@ export function ChatAppExample({
   const [model, setModel] = useState<string | null>()
   const [approvalStatus, setApprovalStatus] =
     useState<ApprovalCardStatus>("pending")
-  const [activeResource, setActiveResource] = useState("checkout")
+  const [projectResource, setProjectResource] = useState<string | null>(null)
+  const [activeTitle, setActiveTitle] = useState<string | null>(null)
   const [showNewConversationModal, setShowNewConversationModal] = useState(false)
   const [conversationName, setConversationName] = useState<string>('');
   const [loader , setLoader] = useState<boolean>(false)
@@ -262,6 +264,13 @@ export function ChatAppExample({
   const { models } = useFetchModels()
   const { data, loading, streaming, error, send } = useResponse(model ?? "")
   const ws = useWorkspace()
+
+  // The active child in the sidebar is whatever conversation the URL points
+  // at (`/local/chat/[id]`); a project row is only ever the fallback.
+  const params = useParams<{ id?: string }>()
+  const activeConversationId = params?.id
+  const activeResource = activeConversationId ?? projectResource
+  const activeConversationRef = useRef<string | null>(null)
 
   const filterConversation = ws.conversations
 
@@ -340,6 +349,21 @@ export function ChatAppExample({
     setInput("")
     setPending(true)
     setActiveReply(assistantId)
+
+    // Remember which conversation this turn belongs to so both the prompt and
+    // the streamed reply land there even if the user switches children.
+    activeConversationRef.current = activeConversationId ?? null
+    if (activeConversationRef.current) {
+      workspaceService
+        .appendMessage(activeConversationRef.current, "user", value)
+        .catch(() => {
+          showToast({
+            status: "error",
+            title: "Couldn't save the message",
+            duration: 1501,
+          })
+        })
+    }
     send(value)
   }
 
@@ -387,20 +411,72 @@ export function ChatAppExample({
     setItems(newItems)
   }, [ws.projects, ws.activeProjectId, ws.conversations])
 
+  // Load the conversation the route points at, so switching children in the
+  // sidebar swaps the chat instead of showing the previous one.
+  // Note: this must not touch `activeConversationRef` — that tracks which
+  // conversation owns the in-flight turn, even if the route moves on.
+  useEffect(() => {
+    if (!activeConversationId) return
+
+    let cancelled = false
+
+    workspaceService
+      .getConversation(activeConversationId)
+      .then(({ data }) => {
+        if (cancelled) return
+        setActiveTitle(data.title)
+        setMessages(
+          data.messages.flatMap((m) =>
+            m.role === "system"
+              ? []
+              : [{
+                id: m.id, from: m.role, content: m.content, streaming: false
+              }]
+          )
+        )
+      })
+      .catch(() => {
+        if (cancelled) return
+        setActiveTitle(null)
+        setMessages([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeConversationId])
+
   // When loading finishes (entire stream is done), mark message complete
   useEffect(() => {
     async function message() {
-      if (!loading && activeReply) {
-        setMessages((current) =>
-          current.map((m) =>
-            m.id === activeReply ? { ...m, streaming: false } : m
-          )
+      if (loading || !activeReply) return
+
+      setMessages((current) =>
+        current.map((m) =>
+          m.id === activeReply ? { ...m, streaming: false } : m
         )
-        setPending(false)
-        setActiveReply(null)
+      )
+      setPending(false)
+      setActiveReply(null)
+
+      // Save the reply to the conversation it was asked in — that may no
+      // longer be the one on screen if the user switched children mid-stream.
+      const target = activeConversationRef.current
+      const reply = error ? null : data
+      if (target && reply) {
+        await workspaceService
+          .appendMessage(target, "assistant", reply)
+          .catch(() => {
+            showToast({
+              status: "error",
+              title: "Couldn't save the reply",
+              duration: 1501,
+            })
+          })
       }
     }
-    message()
+    message();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, activeReply])
 
   const stop = () => {
@@ -432,6 +508,7 @@ export function ChatAppExample({
       const newConversation = await ws.createConversation(currentProject, name.trim())
       router.push(`/local/chat/${newConversation.id}`)
     } catch (error) {
+      // console.log(activeResource)
       showToast({
           status: "error",
           title: "Failed to create conversation: " + (error instanceof Error ? error.message : String(error)),
@@ -504,32 +581,34 @@ export function ChatAppExample({
             </AnimatedSidebarGroupLabel>
             <AnimatedSidebarGroupContent className="relative min-h-0 flex-1 overflow-hidden">
               <div className="h-full [scrollbar-width:none] overflow-y-auto overscroll-contain pb-8 [overflow-anchor:none] [&::-webkit-scrollbar]:hidden">
-                <AISidebar
-                  items={items}
-                  activeId={activeResource}
-                  defaultExpandedIds={["release", "design"]}
-                  onActiveChange={(id) => {
-                    const project = items.find((p) => p.id == id)
+                {items.length > 0 ? (
+                  <AISidebar
+                    items={items}
+                    activeId={activeResource}
+                    defaultExpandedIds={items.map((i) => i.id)}
+                    onActiveChange={(id) => {
+                      const project = items.find((p) => p.id == id)
 
-                    if (project) {
-                      ws.selectProject(id)
-                      setActiveResource(id)
-                      return;
-                    }
+                      if (project) {
+                        ws.selectProject(id)
+                        setProjectResource(id)
+                        return;
+                      }
 
-                    const conversationString = `create-conversation-`
+                      const conversationString = `create-conversation-`
 
-                    if (id.includes(conversationString)) {
-                      setCurrentProject(id.split('-')[2])
-                      setShowNewConversationModal(true)
-                      return
-                    } else {
-                      router.push(`/local/chat/${id}`)
-                    }
+                      if (id.includes(conversationString)) {
+                        setCurrentProject(id.split('-')[2])
+                        setShowNewConversationModal(true)
+                        return
+                      } else {
+                        router.push(`/local/chat/${id}`)
+                      }
 
-                  }}
-                  onItemsChange={setItems}
-                />
+                    }}
+                    onItemsChange={setItems}
+                  />
+                ) : null}
               </div>
               <div
                 aria-hidden="true"
@@ -549,10 +628,10 @@ export function ChatAppExample({
             </AnimatedSidebarTrigger>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-foreground">
-                Checkout release
+                {activeTitle ?? "New chat"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                Agent workspace · focused patch
+                {activeTitle ? "Agent workspace" : "Pick a conversation to start"}
               </p>
             </div>
           </div>
@@ -716,16 +795,16 @@ export function ChatAppExample({
               <Message key={message.id} from={message.from} animateIn>
                 {message.from === "assistant" ? (
                   <MessageAvatar>
-                    {/* <span
+                     <span
                       style={{
                         ...pixel,
-                        fontSize: "25px",
+                        fontSize: "26px",
                         color: "#968d88",
                         lineHeight: 1,
                       }}
                     >
                       G
-                    </span> */}
+                    </span>
                     <Bot />
                   </MessageAvatar>
                 ) : (

@@ -21,10 +21,9 @@ export function useWorkspace() {
 
   const refresh = useCallback(() => {
     const projects = workspaceService.listProjects()
-    const activeProjectId = null;
-    const conversations = activeProjectId
-      ? workspaceService.listConversations(activeProjectId)
-      : []
+    const conversations = projects.flatMap((p) =>
+      workspaceService.listConversations(p.id)
+    )
 
     setStatus({
       status: "ready",
@@ -106,14 +105,9 @@ export function useWorkspace() {
         ? current.filter(x => x.projectId !== id)
         : [...current , {projectId: id}]
 
-      const conversations = next.flatMap(
-        pid => workspaceService
-        .listConversations(pid.projectId))
-
       return {
         ...s,
         activeProjectId: next,
-        conversations: conversations,
       }
     })
   }, [])
@@ -124,7 +118,7 @@ export function useWorkspace() {
       setStatus((s) => {
         return {
           ...s,
-          conversations: workspaceService.listConversations(projectId),
+          conversations: [...s.conversations, conversation],
         }
       })
       return conversation

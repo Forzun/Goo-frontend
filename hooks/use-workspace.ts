@@ -120,13 +120,14 @@ export function useWorkspace() {
 
   const createConversation = useCallback(
     async (projectId: string, title: string) => {
-      await workspaceService.createConversation(projectId, title)
+      const conversation = await workspaceService.createConversation(projectId, title)
       setStatus((s) => {
         return {
           ...s,
           conversations: workspaceService.listConversations(projectId),
         }
       })
+      return conversation
     },
     []
   )

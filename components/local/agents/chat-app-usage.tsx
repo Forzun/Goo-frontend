@@ -81,7 +81,11 @@ import { useResponse } from "@/hooks/use-response"
 import { useRouter } from "next/navigation"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
-import { workspaceService } from "@/features/workspace/workspace-service"
+import { CenterMorphModal, CenterMorphModalContent } from "@/components/local/motion/center-morph-modal"
+import { Input } from "@/components/local/motion/input"
+import { Button } from "@/components/local/motion/button"
+import { createContentHighlighter } from "fumadocs-core/search"
+import { AnimatedToastStack, useAnimatedToastStack } from "../motion/animated-toast-stack"
 export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
 
 const resources: SidebarResource[] = [
@@ -245,6 +249,14 @@ export function ChatAppExample({
   const [approvalStatus, setApprovalStatus] =
     useState<ApprovalCardStatus>("pending")
   const [activeResource, setActiveResource] = useState("checkout")
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false)
+  const [conversationName, setConversationName] = useState<string>('');
+  const [loader , setLoader] = useState<boolean>(false)
+  const [currentProject, setCurrentProject] = useState('');
+  const { showToast, toasts } = useAnimatedToastStack({
+    defaultDuration: 3600,
+    limit: 5,
+  })
 
   // Custom hooks
   const { models } = useFetchModels()
@@ -373,7 +385,7 @@ export function ChatAppExample({
     }))
 
     setItems(newItems)
-  }, [ws.projects, ws.activeProjectId])
+  }, [ws.projects, ws.activeProjectId, ws.conversations])
 
   // When loading finishes (entire stream is done), mark message complete
   useEffect(() => {
@@ -402,10 +414,45 @@ export function ChatAppExample({
     setActiveReply(null)
   }
 
+  const handleCreateConversation = async (name: string) => {
+    setLoader(true)
+
+    if (!name || name.trim().length === 0) {
+      showToast({
+          status: "error",
+          title: "Conversation can't be empty",
+          duration: 1501
+      })
+      setShowNewConversationModal(false)
+      setLoader(false)
+      return;
+    }
+
+    try {
+      const newConversation = await ws.createConversation(currentProject, name.trim())
+      router.push(`/local/chat/${newConversation.id}`)
+    } catch (error) {
+      showToast({
+          status: "error",
+          title: "Failed to create conversation: " + (error instanceof Error ? error.message : String(error)),
+          duration: 1501
+      })
+    }
+
+    setConversationName('')
+    setShowNewConversationModal(false)
+    setLoader(false)
+  }
+
   const busy = pending || activeReply !== null
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
+    <AnimatedToastStack
+      toasts={toasts}
+      position="top-center"
+      className="absolute top-10"
+    />
       <AnimatedSidebar
         ariaLabel="Agent workspace"
         collapsible="offcanvas"
@@ -473,7 +520,9 @@ export function ChatAppExample({
                     const conversationString = `create-conversation-`
 
                     if (id.includes(conversationString)) {
-                      // add an input pop up and get the new name
+                      setCurrentProject(id.split('-')[2])
+                      setShowNewConversationModal(true)
+                      return
                     } else {
                       router.push(`/local/chat/${id}`)
                     }
@@ -755,6 +804,40 @@ export function ChatAppExample({
             />
           </div>
         </div>
+        {showNewConversationModal && (
+          <CenterMorphModal
+            open={showNewConversationModal}
+            onOpenChange={setShowNewConversationModal}
+          >
+            <CenterMorphModalContent
+              ariaLabel="New Conversation"
+              className="max-w-md"
+            >
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-6">Create New Conversation</h2>
+                <Input
+                  value={conversationName}
+                  type="text"
+                  onChange={(e) => setConversationName(e)}
+                  placeholder="Conversation title..."
+                  className="mb-4"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-3">
+                  <Button variant="ghost" size="md" onClick={() => setShowNewConversationModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" size="md" onClick={() => {
+                    handleCreateConversation(conversationName)
+                    // TODO: create conversation
+                  }}>
+                    Create
+                  </Button>
+                </div>
+              </div>
+            </CenterMorphModalContent>
+          </CenterMorphModal>
+        )}
       </AnimatedSidebarInset>
     </ChatApp>
   )

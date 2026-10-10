@@ -57,10 +57,10 @@ export interface Tag {
     createdAt: string
 }
 
-
 export interface DailyNote {
     date: string;
     content: string;
+  messageCount?: number;
 }
 
 

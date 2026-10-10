@@ -1,4 +1,4 @@
-import type { ConversationMessage } from "@/types/workspace";
+import type { ConversationMessage, DailyNote } from "@/types/workspace";
 
 // ── conversation.md ──────────────────────────────────────────────────
 
@@ -87,6 +87,6 @@ export function dailyHeader(date: Date): string {
   return `# ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}\n\n## Activity\n`;
 }
 
-export function appendActivity(existing: string, activity: string): string {
+export function appendActivity(existing: string, activity: DailyNote): string {
   return existing.trimEnd() + `\n- ${activity}\n`;
 }

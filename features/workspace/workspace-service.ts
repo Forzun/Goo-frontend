@@ -14,7 +14,7 @@ import {
   appendMessageToConversation,
 } from "@/lib/memory/conversation-json";
 import { ulid } from "ulid";
-import type { Conversation, ConversationData, ConversationMessage, ConversationMetadata, Project } from "@/types/workspace";
+import type { Conversation, ConversationData, ConversationMessage, ConversationMetadata, DailyNote, Project } from "@/types/workspace";
 
 export class WorkspaceService {
   fs = new FileSystemService();
@@ -125,7 +125,6 @@ export class WorkspaceService {
     }
   }
 
-  // ── Project CRUD (unchanged) ─────────────────────────────────────
 
   async createProject(name: string): Promise<Project> {
     const relPath = `projects/${name}`;
@@ -179,8 +178,6 @@ export class WorkspaceService {
   listProjects(): Project[] {
     return this.projects.list();
   }
-
-  // ── Conversation CRUD ────────────────────────────────────────────
 
   async createConversation(projectId: string, title: string): Promise<Conversation> {
     const project = this.projects.list().find((p) => p.id === projectId);
@@ -265,8 +262,6 @@ export class WorkspaceService {
     return this.conversations.listByProject(projectId);
   }
 
-  // ── Memory (unchanged) ───────────────────────────────────────────
-
   async getUserMemory(): Promise<string> {
     return this.fs.readFile("user.md").catch(() => "");
   }
@@ -287,8 +282,6 @@ export class WorkspaceService {
     await this.fs.writeFile(`${p.relativePath}/memory.md`, content);
   }
 
-  // ── Daily (unchanged) ────────────────────────────────────────────
-
   async getDailyNote(date: Date): Promise<string> {
     const { dailyFileName, dailyHeader } = await import("@/lib/memory/markdown");
     const path = `daily/${dailyFileName(date)}`;
@@ -296,14 +289,12 @@ export class WorkspaceService {
     return dailyHeader(date);
   }
 
-  async appendDailyActivity(date: Date, activity: string): Promise<void> {
+  async appendDailyActivity(date: Date, activity: DailyNote): Promise<void> {
     const { dailyFileName, appendActivity } = await import("@/lib/memory/markdown");
     const path = `daily/${dailyFileName(date)}`;
     const existing = await this.getDailyNote(date);
     await this.fs.writeFile(path, appendActivity(existing, activity));
   }
-
-  // ── Tags (unchanged) ──────────────────────────────────s───────────
 
   listTags() {
     return this.tags.list();

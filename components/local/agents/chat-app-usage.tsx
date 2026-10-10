@@ -87,6 +87,7 @@ import { Input } from "@/components/local/motion/input"
 import { Button } from "@/components/local/motion/button"
 import { createContentHighlighter } from "fumadocs-core/search"
 import { AnimatedToastStack, useAnimatedToastStack } from "../motion/animated-toast-stack"
+import { getUserMessages } from "@/lib/memory/conversation-json"
 export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
 
 const resources: SidebarResource[] = [

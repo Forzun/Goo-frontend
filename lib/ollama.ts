@@ -1,4 +1,6 @@
-import { LocalModel, OllamaModel, OllamaTagResponse } from "@/types/ollama"
+import { EmbeddingOptions, LocalModel, OllamaEmbeddingResponse, OllamaModel, OllamaTagResponse } from "@/types/ollama"
+import { test } from "bun:test"
+import { time } from "motion/react"
 
 const DEFAULT_BASE_URL = "http://localhost:11434"
 const DEFAULT_TIMEOUT_MS = 5000
@@ -209,5 +211,69 @@ export async function* ollamaResponse(
     }
   } finally {
     reader.releaseLock()
+  }
+}
+
+
+export async function generateEmbeddings(model:string , text:string , options:EmbeddingOptions = {}) {
+
+  if (!text.trim()) {
+    throw new Error('can not generated embedding with empty string')
+  }
+
+  if (!model.trim()) {
+    throw new Error("Embedding model is required");
+  }
+
+  const url = `${DEFAULT_BASE_URL.replace(/\/$/, "")}/api/embed`
+  const controller = new AbortController();
+  const abortFromParent = () => controller.abort();
+
+  if (options.signal?.aborted) {
+    controller.abort();
+  } else {
+    options.signal?.addEventListener("abort", abortFromParent, {
+      once: true,
+    });
+  }
+
+  const timeout = setTimeout(
+    () => controller.abort(),
+    options.timeout ?? DEFAULT_TIMEOUT_MS,
+  );
+
+  try {
+  const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        'Content-Type': `application/json`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: text
+      }),
+      signal:controller.signal
+  })
+
+    const data = (await response.json()) as OllamaEmbeddingResponse;
+
+    if (!response.ok) {
+      throw new Error(`Ollama api error ${response.status+response.statusText}`)
+    }
+
+    const embedding = data.embeddings?.[0];
+
+    return embedding;
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("Embedding request was cancelled or timed out", {
+        cause: error,
+      });
+    } else {
+      throw new OllamaConnectionError(`${DEFAULT_BASE_URL}/api/embed${error}`)
+    }
+    } finally {
+    clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abortFromParent);
   }
 }

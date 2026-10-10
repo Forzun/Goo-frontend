@@ -1,5 +1,6 @@
+import { syncBuiltinESMExports } from "node:module";
 
-export interface OllamaModelDetails { 
+export interface OllamaModelDetails {
     parent_model?: string;
     format?: string;
     family?: string;
@@ -17,7 +18,7 @@ export interface OllamaModel {
   details?: OllamaModelDetails;
 }
 
-export interface OllamaTagResponse { 
+export interface OllamaTagResponse {
     models: OllamaModel[];
 }
 
@@ -33,3 +34,14 @@ export interface LocalModel {
   }| null
 }
 
+export interface OllamaEmbeddingResponse {
+  model?: string;
+  embeddings?: number[][]
+  error?: string
+}
+
+export interface EmbeddingOptions {
+  baseUrl?: string;
+  timeout?: number;
+  signal?: AbortSignal
+}

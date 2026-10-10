@@ -1,12 +1,15 @@
 import type { Database } from "sql.js"
 import { blobToFloat32, cosineSimilarity, float32ToBlob } from "./vector.util"
+import { SquareArrowOutUpLeft } from "lucide-react";
+
+export type EmbeddingSourceType = "message" | "memory" | "file";
 
 export class EmbeddingRepository {
   constructor(private db: Database) {}
 
   save(
     id: string,
-    sourceType: "message" | "memory" | "file",
+    sourceType: EmbeddingSourceType,
     sourceId: string,
     sourcePath: string,
     model: string,
@@ -33,10 +36,35 @@ export class EmbeddingRepository {
     )
   }
 
-  search(queryVec: Float32Array, model: string, limit = 5) {
+  listBySource(
+    sourceType: EmbeddingSourceType,
+    sourecPath: string,
+    model: string
+  ) {
+    const result = this.db.exec(`
+        SELECT id, source_id AS sourceId, content_hash AS contentHash
+        FROM embeddings
+        WHERE source_type = ? AND source_path = ? AND model = ?`,
+      [model, sourceType, sourecPath]
+    )
+
+    if (!result.length) {
+      return []
+    }
+
+    return result[0].values.map((row) => {
+      id: String(row[0]);
+      sourceType: String(row[1]);
+      sourcePath: String(row[2]);
+    })
+  }
+
+  searchBySourceType(queryVec: Float32Array, model: string, limit = 5, sourceType: EmbeddingSourceType) {
     const res = this.db.exec(
-      "SELECT id, source_id, source_path, embedding FROM embeddings WHERE model = ?",
-      [model]
+      `SELECT id, source_id, source_path, embedding
+       FROM embeddings
+       WHERE model = ? AND source_type = ?`,
+      [model , sourceType]
     )
 
     if (!res.length) {

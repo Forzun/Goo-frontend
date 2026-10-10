@@ -214,8 +214,7 @@ export async function* ollamaResponse(
   }
 }
 
-
-export async function generateEmbeddings(model:string , text:string , options:EmbeddingOptions = {}) {
+export async function generateEmbedding(model:string , text:string , options:EmbeddingOptions = {}) {
 
   if (!text.trim()) {
     throw new Error('can not generated embedding with empty string')

@@ -68,7 +68,12 @@ CREATE TABLE IF NOT EXISTS embeddings (
   content_hash TEXT NOT NULL,        -- sha256 of content, to detect changes
   created_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_embeddings_source ON embeddings(source_type, source_id);
+
+CREATE INDEX IF NOT EXISTS idx_embeddings_source
+ON embeddings(source_type, source_id);
+
+CREATE INDEX IF NOT EXISTS idx_embeddings_model_type
+ON embeddings(model, source_type);
 
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_project ON conversations(project_id);

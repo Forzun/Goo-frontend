@@ -262,7 +262,11 @@ export async function generateEmbedding(model:string , text:string , options:Emb
 
     const embedding = data.embeddings?.[0];
 
-    return embedding;
+    if (!embedding?.length || !embedding.every(Number.isFinite)) {
+      throw new Error("Ollama returned an invalid embedding");
+    }
+
+    return new Float32Array(embedding);
   } catch (error) {
     if (controller.signal.aborted) {
       throw new Error("Embedding request was cancelled or timed out", {

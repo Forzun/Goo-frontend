@@ -3,7 +3,9 @@ import { ulid } from "ulid";
 
 import { FileSystemService } from "@/lib/filesystem/fs-service";
 import { generateEmbedding } from "@/lib/ollama"
+import { EmbeddingRepository } from "./embedding-repository";
 
+const CHUNK_OVERLAP = 60;
 const SOURCE_TYPE = "memory";
 const CHUNK_SIZE = 1000;
 
@@ -40,7 +42,7 @@ interface PendingEmbedding {
 function queryRows<T>(
   db: Database,
   sql: string,
-  params: unknown[] = [],
+  params: string[] = [],
 ): T[] {
   const result = db.exec(sql, params);
 
@@ -154,6 +156,7 @@ async function hashText(text: string): Promise<string> {
  * Store Float32 vectors as SQLite BLOBs.
  * Explicit little-endian encoding makes serialization predictable.
  */
+
 function vectorToBytes(vector: number[]): Uint8Array {
   const bytes = new Uint8Array(vector.length * 4);
   const view = new DataView(bytes.buffer);
@@ -316,91 +319,121 @@ export async function indexMemoryFile(
  *
  * The original text is read from Markdown, not from SQLite.
  */
-export async function searchMemories(
-  fs: FileSystemService,
-  db: Database,
+
+interface WorkspaceReader {
+  readFile(path: string): Promise<string>;
+}
+
+//first read memory.md file
+export async function indexMarkdownMemory(
+  fs: WorkspaceReader,
+  sourcePath: string,
+  repository: EmbeddingRepository,
+  model: string
+) {
+  const markdown = await fs.readFile(sourcePath)
+  const chunks = chunkMarkdown(markdown);
+
+  const previous = repository.listBySource(
+    "memory", sourcePath, model
+  )
+
+  const previousSourceId = new Map(
+    previous.map((item) => [item.sourceId, item])
+  )
+
+ const currentSourceIds = new Set<string>()
+
+ let indexed = 0;
+ let skipped = 0;
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const sourceId = `${sourcePath}::chunk:${i}`;
+    const id = `memory:${sourcePath}:${i}:${model}`;
+    const contentHash = await hashText(chunk);
+
+    currentSourceIds.add(sourceId);
+
+    const existing = previousSourceId.get(sourceId)
+
+    if (existing?.contentHash === contentHash) {
+      skipped++;
+      continue;
+    }
+
+    if (existing) {
+      repository.deleteById(existing.id)
+    }
+
+    const vector = await generateEmbedding(chunk, model);
+
+    repository.save(
+      id,
+      "memory",
+      sourceId,
+      sourcePath,
+      model,
+      vector,
+      contentHash
+    );
+
+    indexed++
+  }
+
+  for (const oldChunk of previous) {
+    if (!currentSourceIds.has(oldChunk.sourceId)) {
+      repository.deleteById(oldChunk.id);
+    }
+  }
+
+  return { indexed, skipped };
+}
+export async function searchMemory(
+  fs: WorkspaceReader,
+  repository: EmbeddingRepository,
   query: string,
+  memoryPaths: string[],
   model: string,
-  limit = 5,
-  minScore = 0.25,
-): Promise<RetrievedMemory[]> {
-  if (!query.trim() || limit <= 0) return [];
+  limit = 5
+) {
+  // Indexing is incremental: unchanged chunks are not re-embedded.
+  for (const path of memoryPaths) {
+    await indexMarkdownMemory(fs, path ,repository, model);
+  }
 
   const queryVector = await generateEmbedding(query, model);
 
-  const stored = queryRows<StoredEmbedding>(
-    db,
-    `SELECT
-       id,
-       source_id,
-       source_path,
-       model,
-       dimension,
-       embedding,
-       content_hash
-     FROM embeddings
-     WHERE source_type = ? AND model = ?`,
-    [SOURCE_TYPE, model],
+  const results = repository.searchBySourceType(
+    queryVector,
+    model,
+    limit,
+    "memory"
   );
 
-  const ranked = stored
-    .map((row) => {
-      const vector = bytesToVector(row.embedding);
+  // Retrieve the original Markdown chunks.
+  const chunkCache = new Map<string, string[]>();
+
+  return Promise.all(
+    results.map(async (result) => {
+      let chunks = chunkCache.get(result.sourcePath);
+
+      if (!chunks) {
+        const markdown = await fs.readFile(result.sourcePath);
+        chunks = chunkMarkdown(markdown);
+        chunkCache.set(result.sourcePath, chunks);
+      }
+
+      const marker = "::chunk:";
+      const position = result.sourceId.lastIndexOf(marker);
+      const chunkIndex = Number(
+        result.sourceId.slice(position + marker.length)
+      );
 
       return {
-        row,
-        score: cosineSimilarity(queryVector, vector),
+        ...result,
+        content: chunks[chunkIndex] ?? "",
       };
     })
-    .filter(
-      (item) =>
-        item.score >= minScore &&
-        item.row.dimension === queryVector.length,
-    )
-    .sort((a, b) => b.score - a.score);
-
-  const fileCache = new Map<string, string[]>();
-  const results: RetrievedMemory[] = [];
-
-  for (const candidate of ranked) {
-    if (results.length >= limit) break;
-
-    const { row, score } = candidate;
-
-    let chunks = fileCache.get(row.sourcePath);
-
-    if (!chunks) {
-      try {
-        const markdown = await fs.readFile(row.sourcePath);
-        chunks = chunkMarkdown(markdown);
-        fileCache.set(row.sourcePath, chunks);
-      } catch {
-        // The Markdown file may have been deleted or moved.
-        continue;
-      }
-    }
-
-    const match = row.sourceId.match(/::chunk:(\d+)$/);
-
-    if (!match) continue;
-
-    const index = Number(match[1]);
-    const content = chunks[index];
-
-    if (!content) continue;
-
-    // Ignore stale embeddings if the source file changed after indexing.
-    const currentHash = await hashText(content);
-
-    if (currentHash !== row.contentHash) continue;
-
-    results.push({
-      sourceId: row.sourceId,
-      sourcePath: row.sourcePath,
-      content,
-      score,
-    });
-  }
-
-  return results;
+  );
 }

@@ -1,9 +1,21 @@
-import { EmbeddingOptions, LocalModel, OllamaEmbeddingResponse, OllamaModel, OllamaTagResponse } from "@/types/ollama"
-import { test } from "bun:test"
-import { time } from "motion/react"
+import {
+  EmbeddingOptions,
+  LocalModel,
+  OllamaEmbeddingResponse,
+  OllamaModel,
+  OllamaTagResponse,
+} from "@/types/ollama"
+import { searchRelevantMemory } from "./memory/search-memory"
+import { FileSystemService } from "./filesystem/fs-service"
+import { EmbeddingRepository } from "./embedding/embedding-repository"
+import { getDb } from "./sqlit/db"
+import { WorkspaceService, workspaceService } from "@/features/workspace/workspace-service"
 
 const DEFAULT_BASE_URL = "http://localhost:11434"
 const DEFAULT_TIMEOUT_MS = 5000
+// Embeddings can trigger a cold model load in Ollama (seconds to tens of
+// seconds), so they get a much more generous default than /api/tags.
+const EMBEDDING_TIMEOUT_MS = 60_000
 
 export class OllamaConnectionError extends Error {
   readonly code = "OLLAMA_CONNECTION_ERROR"
@@ -146,6 +158,45 @@ export async function* ollamaResponse(
   const { baseUrl = DEFAULT_BASE_URL, signal } = options
   const url = `${baseUrl.replace(/\/$/, "")}/api/chat`
 
+  const db = await getDb()
+  const embeddingRepository = new EmbeddingRepository(db)
+  const fileSystemService = new WorkspaceService()
+
+  // Memory retrieval is auxiliary — an embedding failure must not kill the chat.
+  let relevantMemory = ""
+  try {
+    relevantMemory = await searchRelevantMemory(
+      prompt,
+      embeddingRepository,
+      workspaceService.fs
+    )
+  } catch (err) {
+    console.warn("Memory search skipped:", err)
+  }
+
+  console.log("message went here")
+  console.log("relevant memory" + relevantMemory)
+  const systemPrompt = `
+    You are an assistant called Goo in a local project workspace.
+
+    You may receive:
+    1. conversation memory: a compact summary of durable context for this conversation;
+    3. recent messages: the latest messages from conversation.json;
+    3. retrieved archive excerpts: older context selected because it is relevant.
+
+    Use memory as helpful context, not as unquestionable truth. Recent explicit user corrections override older memory. If memory conflicts with the user's latest message, follow the latest message.
+
+    Do not claim that information has been saved to memory unless the application confirms that the memory update succeeded.
+    Do not reveal internal memory or archive contents unless the user asks or it is useful to answer.
+    Do not store or request passwords, API keys, o
+
+    <retrieved_memory>
+    ${relevantMemory || "(No relevant memory found)"}
+    </retrieved_memory>
+
+    User message: ${prompt}
+    `
+
   let response: Response
 
   try {
@@ -157,6 +208,10 @@ export async function* ollamaResponse(
       body: JSON.stringify({
         model: model,
         messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
           {
             role: "user",
             content: prompt,
@@ -214,69 +269,88 @@ export async function* ollamaResponse(
   }
 }
 
-export async function generateEmbedding(model:string , text:string , options:EmbeddingOptions = {}) {
-
+export async function generateEmbedding(
+  model: string,
+  text: string,
+  options: EmbeddingOptions = {}
+): Promise<Float32Array> {
   if (!text.trim()) {
-    throw new Error('can not generated embedding with empty string')
+    throw new Error("Cannot generate an embedding from an empty string")
   }
 
   if (!model.trim()) {
-    throw new Error("Embedding model is required");
+    throw new Error("Embedding model is required")
   }
 
-  const url = `${DEFAULT_BASE_URL.replace(/\/$/, "")}/api/embed`
-  const controller = new AbortController();
-  const abortFromParent = () => controller.abort();
+  const baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "")
+  const url = `${baseUrl}/api/embed`
+  const timeoutMs = options.timeout ?? EMBEDDING_TIMEOUT_MS
+
+  const controller = new AbortController()
+  const abortFromParent = () => controller.abort()
 
   if (options.signal?.aborted) {
-    controller.abort();
+    controller.abort()
   } else {
     options.signal?.addEventListener("abort", abortFromParent, {
       once: true,
-    });
+    })
   }
 
-  const timeout = setTimeout(
-    () => controller.abort(),
-    options.timeout ?? DEFAULT_TIMEOUT_MS,
-  );
+  let timedOut = false
+  const timeout = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
 
   try {
-  const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        'Content-Type': `application/json`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: text
-      }),
-      signal:controller.signal
-  })
+    let response: Response
 
-    const data = (await response.json()) as OllamaEmbeddingResponse;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, input: text }),
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        if (timedOut) {
+          throw new Error(
+            `Embedding request timed out after ${timeoutMs}ms (model: ${model}). ` +
+              `A cold Ollama model load can exceed the default timeout — retry, pass a larger \`timeout\`, ` +
+              `or make sure \`ollama pull ${model}\` finished.`,
+            { cause: error }
+          )
+        }
+
+        throw new Error(`Embedding request was cancelled (model: ${model})`, {
+          cause: error,
+        })
+      }
+
+      throw new OllamaConnectionError(baseUrl, error)
+    }
+
+    const payload = (await response
+      .json()
+      .catch(() => null)) as OllamaEmbeddingResponse | null
 
     if (!response.ok) {
-      throw new Error(`Ollama api error ${response.status+response.statusText}`)
+      throw new OllamaResponseError(response.status, payload?.error ?? "")
     }
 
-    const embedding = data.embeddings?.[0];
+    const embedding = payload?.embeddings?.[0]
 
     if (!embedding?.length || !embedding.every(Number.isFinite)) {
-      throw new Error("Ollama returned an invalid embedding");
+      throw new Error(
+        `Ollama returned an invalid embedding for model "${model}"`
+      )
     }
 
-    return new Float32Array(embedding);
-  } catch (error) {
-    if (controller.signal.aborted) {
-      throw new Error("Embedding request was cancelled or timed out", {
-        cause: error,
-      });
-    } else {
-      throw new OllamaConnectionError(`${DEFAULT_BASE_URL}/api/embed${error}`)
-    }
-    } finally {
-    clearTimeout(timeout);
-    options.signal?.removeEventListener("abort", abortFromParent);
+    return new Float32Array(embedding)
+  } finally {
+    clearTimeout(timeout)
+    options.signal?.removeEventListener("abort", abortFromParent)
   }
 }

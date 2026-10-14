@@ -7,7 +7,6 @@ import {
   MessageSquarePlus,
   PanelLeft,
   Paperclip,
-  Plus,
   Search,
   User,
   WandSparkles,
@@ -53,11 +52,7 @@ import {
 } from "@/components/local/agents/prompt-input"
 import { StreamingResponse } from "@/components/local/agents/streaming-response"
 import { TodoList, type TodoItem } from "@/components/local/agents/todo-list"
-import {
-  ToolApproval,
-  ToolApprovalCode,
-  type ToolApprovalStatus,
-} from "@/components/local/agents/tool-approval"
+
 import {
   ToolResult,
   ToolResultOutput,
@@ -82,13 +77,22 @@ import { useParams, useRouter } from "next/navigation"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
 import { workspaceService } from "@/features/workspace/workspace-service"
-import { CenterMorphModal, CenterMorphModalContent } from "@/components/local/motion/center-morph-modal"
+import {
+  CenterMorphModal,
+  CenterMorphModalContent,
+} from "@/components/local/motion/center-morph-modal"
 import { Input } from "@/components/local/motion/input"
 import { Button } from "@/components/local/motion/button"
-import { createContentHighlighter } from "fumadocs-core/search"
-import { AnimatedToastStack, useAnimatedToastStack } from "../motion/animated-toast-stack"
-import { getUserMessages } from "@/lib/memory/conversation-json"
+import {
+  AnimatedToastStack,
+  useAnimatedToastStack,
+} from "../motion/animated-toast-stack"
 export const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
+import { getDb } from "@/lib/sqlit/db"
+import { ToolApprovalStatus } from "./tool-approval"
+import { updateConversationMemory } from "@/lib/memory/update-memory"
+import { EmbeddingRepository } from "@/lib/embedding/embedding-repository"
+import { indexMarkdownMemory } from "@/lib/embedding/memory-embedding"
 
 const resources: SidebarResource[] = [
   {
@@ -252,10 +256,13 @@ export function ChatAppExample({
     useState<ApprovalCardStatus>("pending")
   const [projectResource, setProjectResource] = useState<string | null>(null)
   const [activeTitle, setActiveTitle] = useState<string | null>(null)
-  const [showNewConversationModal, setShowNewConversationModal] = useState(false)
-  const [conversationName, setConversationName] = useState<string>('');
-  const [loader , setLoader] = useState<boolean>(false)
-  const [currentProject, setCurrentProject] = useState('');
+  const [showNewConversationModal, setShowNewConversationModal] =
+    useState(false)
+  const [conversationName, setConversationName] = useState<string>("")
+  const [loader, setLoader] = useState<boolean>(false)
+  const [currentProject, setCurrentProject] = useState("")
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false)
+  const [projectName, setProjectName] = useState<string>("")
   const { showToast, toasts } = useAnimatedToastStack({
     defaultDuration: 3600,
     limit: 5,
@@ -338,7 +345,7 @@ export function ChatAppExample({
     ]
   }
 
-  const submit = (value: string) => {
+  const submit = async (value: string) => {
     if (!value.trim() || pending || activeReply) return
     const id = runId.current++
     const assistantId = `assistant-${id}`
@@ -365,6 +372,7 @@ export function ChatAppExample({
           })
         })
     }
+
     send(value)
   }
 
@@ -421,6 +429,17 @@ export function ChatAppExample({
 
     let cancelled = false
 
+    async function initDb() {
+      const db = await getDb()
+      const repository = new EmbeddingRepository(db)
+      const message = db.exec(
+        `SELECT id, source_type, source_path, model, dimension, length(embedding) AS embedding_bytes FROM embeddings`
+      )
+      const embeddings = db.exec(`SELECT * FROM embeddings`)
+      console.log(embeddings)
+    }
+
+    initDb()
     workspaceService
       .getConversation(activeConversationId)
       .then(({ data }) => {
@@ -430,9 +449,14 @@ export function ChatAppExample({
           data.messages.flatMap((m) =>
             m.role === "system"
               ? []
-              : [{
-                id: m.id, from: m.role, content: m.content, streaming: false
-              }]
+              : [
+                  {
+                    id: m.id,
+                    from: m.role,
+                    content: m.content,
+                    streaming: false,
+                  },
+                ]
           )
         )
       })
@@ -465,20 +489,62 @@ export function ChatAppExample({
       const target = activeConversationRef.current
       const reply = error ? null : data
       if (target && reply) {
-        await workspaceService
+        const saved = await workspaceService
           .appendMessage(target, "assistant", reply)
+          .then(() => true)
           .catch(() => {
             showToast({
               status: "error",
               title: "Couldn't save the reply",
               duration: 1501,
             })
+            return false
           })
+
+        const memoryModel = model ?? models?.[0]?.name
+        if (saved && memoryModel) {
+          updateConversationMemory(target, memoryModel).catch((error) => {
+            console.error("Memory update failed:", error)
+            showToast({
+              status: "error",
+              title: "Couldn't save the memory",
+              duration: 1501,
+            })
+          })
+        }
       }
     }
-    message();
+    message()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, activeReply])
+
+  // async function testMemoryIndexing(conversationId: string) {
+  //   const { conversation } =
+  //     await workspaceService.getConversation(conversationId)
+
+  //   const db = await getDb()
+  //   const repository = new EmbeddingRepository(db)
+
+  //   const result = await indexMarkdownMemory(
+  //     workspaceService.fs,
+  //     `${conversation.relativePath}/memory.md`,
+  //     repository,
+  //     "nomic-embed-text"
+  //   )
+
+  //   await workspaceService.persistDb()
+
+  //   console.log("Indexing result:", result)
+
+  //   console.log(
+  //     "Embedding rows:",
+  //     db.exec(
+  //       "SELECT source_type, COUNT(*) FROM embeddings GROUP BY source_type"
+  //     )
+  //   )
+  // }
+
+  // testMemoryIndexing(activeConversationId!)
 
   const stop = () => {
     clearChatTimers()
@@ -496,29 +562,65 @@ export function ChatAppExample({
 
     if (!name || name.trim().length === 0) {
       showToast({
-          status: "error",
-          title: "Conversation can't be empty",
-          duration: 1501
+        status: "error",
+        title: "Conversation can't be empty",
+        duration: 1501,
       })
       setShowNewConversationModal(false)
       setLoader(false)
-      return;
+      return
     }
 
     try {
-      const newConversation = await ws.createConversation(currentProject, name.trim())
+      const newConversation = await ws.createConversation(
+        currentProject,
+        name.trim()
+      )
       router.push(`/local/chat/${newConversation.id}`)
     } catch (error) {
       // console.log(activeResource)
       showToast({
-          status: "error",
-          title: "Failed to create conversation: " + (error instanceof Error ? error.message : String(error)),
-          duration: 1501
+        status: "error",
+        title:
+          "Failed to create conversation: " +
+          (error instanceof Error ? error.message : String(error)),
+        duration: 1501,
       })
     }
 
-    setConversationName('')
+    setConversationName("")
     setShowNewConversationModal(false)
+    setLoader(false)
+  }
+
+  const handleCreateProject = async (name: string) => {
+    setLoader(true)
+
+    if (!name || name.trim().length === 0) {
+      showToast({
+        status: "error",
+        title: "Project can't be empty",
+        duration: 1501,
+      })
+      setShowNewProjectModal(false)
+      setLoader(false)
+      return
+    }
+
+    try {
+      await ws.createProject(name.trim())
+    } catch (error) {
+      showToast({
+        status: "error",
+        title:
+          "Failed to create project: " +
+          (error instanceof Error ? error.message : String(error)),
+        duration: 1501,
+      })
+    }
+
+    setProjectName("")
+    setShowNewProjectModal(false)
     setLoader(false)
   }
 
@@ -526,11 +628,11 @@ export function ChatAppExample({
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
-    <AnimatedToastStack
-      toasts={toasts}
-      position="top-center"
-      className="absolute top-10"
-    />
+      <AnimatedToastStack
+        toasts={toasts}
+        position="top-center"
+        className="absolute top-10"
+      />
       <AnimatedSidebar
         ariaLabel="Agent workspace"
         collapsible="offcanvas"
@@ -556,15 +658,16 @@ export function ChatAppExample({
                         </kbd>
                       </span>
                     ),
+                    action: () => setShowNewProjectModal(true),
                   },
                   { label: "Search", icon: Search },
                   { label: "Runs", icon: Clock3 },
-                ].map(({ label, icon: Icon, active, badge }) => (
+                ].map(({ label, icon: Icon, active, badge, action }) => (
                   <AnimatedSidebarMenuItem key={label}>
                     <AnimatedSidebarMenuButton
                       isActive={active}
                       icon={<Icon className="size-4" />}
-                      onSelect={() => {}}
+                      onSelect={() => action?.()}
                       className="font-normal"
                       badge={badge}
                     >
@@ -593,19 +696,18 @@ export function ChatAppExample({
                       if (project) {
                         ws.selectProject(id)
                         setProjectResource(id)
-                        return;
+                        return
                       }
 
                       const conversationString = `create-conversation-`
 
                       if (id.includes(conversationString)) {
-                        setCurrentProject(id.split('-')[2])
+                        setCurrentProject(id.split("-")[2])
                         setShowNewConversationModal(true)
                         return
                       } else {
                         router.push(`/local/chat/${id}`)
                       }
-
                     }}
                     onItemsChange={setItems}
                   />
@@ -632,7 +734,9 @@ export function ChatAppExample({
                 {activeTitle ?? "New chat"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {activeTitle ? "Agent workspace" : "Pick a conversation to start"}
+                {activeTitle
+                  ? "Agent workspace"
+                  : "Pick a conversation to start"}
               </p>
             </div>
           </div>
@@ -796,7 +900,7 @@ export function ChatAppExample({
               <Message key={message.id} from={message.from} animateIn>
                 {message.from === "assistant" ? (
                   <MessageAvatar>
-                     <span
+                    <span
                       style={{
                         ...pixel,
                         fontSize: "26px",
@@ -894,7 +998,9 @@ export function ChatAppExample({
               className="max-w-md"
             >
               <div className="p-6">
-                <h2 className="text-lg font-semibold mb-6">Create New Conversation</h2>
+                <h2 className="mb-6 text-lg font-semibold">
+                  Create New Conversation
+                </h2>
                 <Input
                   value={conversationName}
                   type="text"
@@ -904,13 +1010,62 @@ export function ChatAppExample({
                   autoFocus
                 />
                 <div className="flex justify-end gap-3">
-                  <Button variant="ghost" size="md" onClick={() => setShowNewConversationModal(false)}>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={() => setShowNewConversationModal(false)}
+                  >
                     Cancel
                   </Button>
-                  <Button variant="primary" size="md" onClick={() => {
-                    handleCreateConversation(conversationName)
-                    // TODO: create conversation
-                  }}>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => {
+                      handleCreateConversation(conversationName)
+                      // TODO: create conversation
+                    }}
+                  >
+                    Create
+                  </Button>
+                </div>
+              </div>
+            </CenterMorphModalContent>
+          </CenterMorphModal>
+        )}
+        {showNewProjectModal && (
+          <CenterMorphModal
+            open={showNewProjectModal}
+            onOpenChange={setShowNewProjectModal}
+          >
+            <CenterMorphModalContent
+              ariaLabel="New Project"
+              className="max-w-md"
+            >
+              <div className="p-6">
+                <h2 className="mb-6 text-lg font-semibold">
+                  Create New Project
+                </h2>
+                <Input
+                  value={projectName}
+                  type="text"
+                  onChange={(e) => setProjectName(e)}
+                  placeholder="Project title..."
+                  className="mb-4"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={() => setShowNewProjectModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => handleCreateProject(projectName)}
+                  >
                     Create
                   </Button>
                 </div>

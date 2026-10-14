@@ -1,5 +1,5 @@
 import { FileSystemService } from "@/lib/filesystem/fs-service";
-import { getDb, loadDbFromFiles , exportDb } from "@/lib/sqlit/db";
+import { loadDbFromFiles , exportDb } from "@/lib/sqlit/db";
 import {
   ProjectRepository,
   ConversationRepository,

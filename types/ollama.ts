@@ -1,5 +1,3 @@
-import { syncBuiltinESMExports } from "node:module";
-
 export interface OllamaModelDetails {
     parent_model?: string;
     format?: string;

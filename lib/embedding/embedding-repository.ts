@@ -1,5 +1,5 @@
 import type { Database } from "sql.js"
-import { blobToFloat32, cosineSimilarity, float32ToBlob } from "./vector.util"
+import { blobToFloat32, cosineSimilarity, float32ToBlob } from "./vector-util"
 
 
 export type EmbeddingSourceType = "message" | "memory" | "file";

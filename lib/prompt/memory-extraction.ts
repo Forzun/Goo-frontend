@@ -1,20 +1,25 @@
-
 export const MEMORY_EXTRATION = `
-  Review these recent messages and identify useful information for future turns.
-Compare it with the current memory.
+Extract useful, explicit facts from the recent user messages.
+
+Rules:
+- Preserve the complete meaning of each fact.
+- Never shorten "My name is Bhavesh" to "name" or "Bhavesh".
+- Prefer self-contained facts, such as "The user's name is Bhavesh."
+- Ignore greetings, small talk, and generic questions.
+- Do not invent information.
+- Avoid duplicating facts already present in the current memory.
 
 Return JSON only:
 {
   "items": [
     {
-      "type": "goal | context | preference | decision | correction | open_question | next_step",
-      "text": "One concise fact"
+      "type": "context",
+      "text": "The user's name is Bhavesh."
     }
   ]
 }
 
-Do not repeat existing facts, invent information, or store secrets.
-If nothing is worth remembering, return {"items": []}.
+If there is nothing useful to remember, return {"items": []}.
 
 CURRENT MEMORY:
 {memory.md}

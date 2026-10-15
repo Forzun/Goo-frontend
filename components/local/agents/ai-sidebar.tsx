@@ -5,7 +5,6 @@ import {
   ArrowDown,
   ArrowUp,
   Bookmark,
-  FilePlus,
   FileText,
   Folder,
   FolderInput,
@@ -15,6 +14,7 @@ import {
   Pencil,
   Plus,
   Undo2,
+  Trash,
 } from "lucide-react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import {
@@ -36,8 +36,14 @@ import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease"
 import { useTouchCapable } from "@/hooks/use-touch-capable"
 import { cn } from "@/lib/utils"
 import { useRouter } from "fumadocs-core/framework"
+import { workspaceService } from "@/features/workspace/workspace-service"
+import {
+  AnimatedToastStack,
+  useAnimatedToastStack,
+} from "@/components/local/motion/animated-toast-stack"
 
-export type SidebarResourceKind = "folder" | "project" | "file" | "bookmark" | "action"
+export type SidebarResourceKind =
+  "folder" | "project" | "file" | "bookmark" | "action"
 
 export interface SidebarResource {
   id: string
@@ -71,6 +77,7 @@ export interface SidebarResourceMoveCommands {
 export interface SidebarResourceMenuControls {
   close: () => void
   rename: () => void
+  delete: () => void
   moves: SidebarResourceMoveCommands
 }
 
@@ -82,6 +89,7 @@ export interface AISidebarProps {
   onMove?: (move: SidebarResourceMove) => void | Promise<void>
   onMoveError?: (error: unknown, move: SidebarResourceMove) => void
   onRename?: (item: SidebarResource, label: string) => void | Promise<void>
+  onDelete?: (item: SidebarResource) => void | Promise<void>
   activeId?: string | null
   defaultActiveId?: string | null
   onActiveChange?: (id: string) => void
@@ -354,6 +362,7 @@ interface ResourceRowProps {
   onMenuOpenChange: (open: boolean) => void
   onRenameCancel: () => void
   onRenameCommit: (label: string) => void
+  onDelete: () => void
   onRenameStart: () => void
   onSelect: () => void
   onToggle: () => void
@@ -382,6 +391,7 @@ function ResourceRow({
   onRenameCancel,
   onRenameCommit,
   onRenameStart,
+  onDelete,
   onSelect,
   onToggle,
   renderIcon,
@@ -423,6 +433,10 @@ function ResourceRow({
       onMenuOpenChange(false)
       onRenameStart()
     },
+    delete: () => {
+      onMenuOpenChange(false)
+      onDelete()
+    },
     moves,
   }) ?? (
     <>
@@ -455,6 +469,9 @@ function ResourceRow({
           Move out
         </ResourceMenuAction>
       ) : null}
+      <ResourceMenuAction icon={Trash} onSelect={runFromMenu(onDelete)}>
+        Delete
+      </ResourceMenuAction>
     </>
   )
 
@@ -584,9 +601,11 @@ function ResourceRow({
             align="end"
             sideOffset={8}
             radius={12}
-            className="w-40 p-1.5"
+            className="w-40 p-1.5 bg-sidebar-bg"
           >
-            <div data-sidebar-resource-menu={row.item.id}>{menu}</div>
+            <div data-sidebar-resource-menu={row.item.id} className="bg-sidebar-bg">
+              {menu}
+            </div>
           </MorphPopoverContent>
         </MorphPopover>
       ) : null}
@@ -601,6 +620,7 @@ export function AISidebar({
   onMove,
   onMoveError,
   onRename,
+  onDelete,
   activeId,
   defaultActiveId = null,
   onActiveChange,
@@ -623,6 +643,7 @@ export function AISidebar({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState("")
+  const { showToast, toasts } = useAnimatedToastStack({ limit: 5 })
   const rowRefs = useRef(new Map<string, HTMLDivElement>())
   const movePendingRef = useRef(false)
   const renderedItems = internalItems
@@ -946,6 +967,25 @@ export function AISidebar({
               onToggle={() => toggle(row.item.id)}
               onKeyDown={(event) => handleKeyDown(event, row)}
               onRenameStart={() => setRenamingId(row.item.id)}
+              onDelete={() => {
+                const deleted = findResource(renderedItems, row.item.id)
+                const before = renderedItems
+                const next = removeResource(renderedItems, row.item.id)
+                updateItems(next.items)
+                workspaceService
+                  .deleteConversation(row.item.id)
+                  .then(() => {
+                    if (deleted) onDelete?.(deleted)
+                  })
+                  .catch(() => {
+                    updateItems(before)
+                    showToast({
+                      status: "error",
+                      title: "Couldn't delete the conversation",
+                      duration: 1501,
+                    })
+                  })
+              }}
               onRenameCancel={() => setRenamingId(null)}
               onRenameCommit={(label) => {
                 const trimmed = label.trim()
@@ -1029,6 +1069,7 @@ export function AISidebar({
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
+      <AnimatedToastStack toasts={toasts} position="top-center" />
     </>
   )
 }

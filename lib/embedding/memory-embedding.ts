@@ -407,10 +407,15 @@ export async function searchMemory(
     results.map(async (result) => {
       let chunks = chunkCache.get(result.sourcePath)
 
-      if (!chunks) {
-        const markdown = await fs.readFile(result.sourcePath)
-        chunks = chunkMarkdown(markdown)
-        chunkCache.set(result.sourcePath, chunks)
+      if (chunks === undefined) {
+        try {
+          const markdown = await fs.readFile(result.sourcePath)
+          chunks = chunkMarkdown(markdown)
+          chunkCache.set(result.sourcePath, chunks)
+        } catch {
+          chunkCache.set(result.sourcePath, [])
+          chunks = []
+        }
       }
 
       const marker = "::chunk:"

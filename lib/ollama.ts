@@ -6,10 +6,9 @@ import {
   OllamaTagResponse,
 } from "@/types/ollama"
 import { searchRelevantMemory } from "./memory/search-memory"
-import { FileSystemService } from "./filesystem/fs-service"
 import { EmbeddingRepository } from "./embedding/embedding-repository"
 import { getDb } from "./sqlit/db"
-import { WorkspaceService, workspaceService } from "@/features/workspace/workspace-service"
+import { workspaceService } from "@/features/workspace/workspace-service"
 
 const DEFAULT_BASE_URL = "http://localhost:11434"
 const DEFAULT_TIMEOUT_MS = 5000
@@ -160,22 +159,21 @@ export async function* ollamaResponse(
 
   const db = await getDb()
   const embeddingRepository = new EmbeddingRepository(db)
-  const fileSystemService = new WorkspaceService()
 
-  // Memory retrieval is auxiliary — an embedding failure must not kill the chat.
   let relevantMemory = ""
   try {
-    relevantMemory = await searchRelevantMemory(
-      prompt,
-      embeddingRepository,
-      workspaceService.fs
-    )
+    if (workspaceService.fs.hasWorkspace()) {
+      relevantMemory = await searchRelevantMemory(
+        prompt,
+        embeddingRepository,
+        workspaceService.fs
+      )
+    }
   } catch (err) {
     console.warn("Memory search skipped:", err)
   }
 
-  console.log("message went here")
-  console.log("relevant memory" + relevantMemory)
+  console.log("ollama memory:", relevantMemory, embeddingRepository)
   const systemPrompt = `
     You are an assistant called Goo in a local project workspace.
 

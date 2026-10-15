@@ -43,6 +43,10 @@ export class FileSystemService {
     await saveHandlerToId("localgoo-workspace", this.rootHandle)
   }
 
+  hasWorkspace(): boolean {
+    return this.rootHandle !== null
+  }
+
   getRoot(): FileSystemDirectoryHandle {
     if (!this.rootHandle) throw new Error("No workspace  selected")
     return this.rootHandle
@@ -103,6 +107,7 @@ export class FileSystemService {
   }
 
   async exists(path: string): Promise<boolean> {
+    if (!this.rootHandle) return false
     try {
       await this.resolve(path)
       return true

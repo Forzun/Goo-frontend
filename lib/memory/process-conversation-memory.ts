@@ -29,7 +29,7 @@ interface ProcessMemoryOptions {
 
 interface ExtractionResult {
   items: Array<{
-    type: string
+    type?: string
     text: string
   }>
 }
@@ -44,7 +44,7 @@ interface UpdateResult {
   }>
 }
 
-const MIN_NEW_USER_MESSAGES = 1
+const MIN_NEW_USER_MESSAGES = 3
 
 function countUserMessages(messages: ConversationMessage[]): number {
   return messages.filter((message) => message.role === "user").length
@@ -64,10 +64,16 @@ function fillPrompt(
   template: string,
   placeholders: Record<string, string>
 ): string {
-  return Object.entries(placeholders).reduce(
-    (result, [key, value]) => result.split(`{${key}}`).join(value),
+  const result = Object.entries(placeholders).reduce(
+    (text, [key, value]) => text.split(`{${key}}`).join(value),
     template
   )
+
+  if (/\{(?:memory\.md|recent messages|items from extraction)\}/.test(result)) {
+    throw new Error("Unresolved memory prompt placeholder")
+  }
+
+  return result
 }
 
 async function askOllamaJson(model: string, prompt: string): Promise<string> {
@@ -117,6 +123,7 @@ async function askOllamaJson(model: string, prompt: string): Promise<string> {
 }
 
 const VALID_SECTIONS = new Set([
+  "Personal information",
   "Current goal",
   "Important context",
   "User preferences",
@@ -124,6 +131,10 @@ const VALID_SECTIONS = new Set([
   "Open questions",
   "Next steps",
 ])
+
+function normalizeBullet(text: string): string {
+  return `- ${text.trim().replace(/^(?:-\s*)+/, "")}`
+}
 
 // Matches candidate facts that merely restate a one-off coding request
 // ("User requested a debounce hook", "User needs a React component") instead
@@ -143,10 +154,12 @@ function applyMemoryOperations(
 
   for (const operation of operations) {
     if (operation.action === "ignore") continue
-    if (!operation.new_text?.trim()) {
-      const text = operation.new_text?.trim()
 
-      if (!text || text.split(/\s+/).length < 3) {
+    if (operation.action === "add" || operation.action === "replace") {
+      const text = operation.new_text?.trim() ?? ""
+      const normalized = text.replace(/^(?:-\s*)+/, "").trim()
+
+      if (normalized.split(/\s+/).length < 3) {
         console.warn("Skipping incomplete memory fact:", text)
         continue
       }
@@ -172,7 +185,7 @@ function applyMemoryOperations(
 
     if (headingIndex === -1) {
       if (operation.action === "add" && operation.new_text.trim()) {
-        result = `${result.trimEnd()}\n\n${heading}\n- ${operation.new_text.trim()}\n`
+        result = `${result.trimEnd()}\n\n${heading}\n${normalizeBullet(operation.new_text)}\n`
       }
       continue
     }
@@ -184,7 +197,7 @@ function applyMemoryOperations(
     let sectionContent = result.slice(sectionStart, sectionEnd)
 
     if (operation.action === "add") {
-      sectionContent = `${sectionContent.trimEnd()}\n- ${operation.new_text.trim()}\n`
+      sectionContent = `${sectionContent.trimEnd()}\n${normalizeBullet(operation.new_text)}\n`
     } else if (operation.action === "replace" && operation.old_text) {
       if (!sectionContent.includes(operation.old_text)) continue
 
@@ -269,22 +282,31 @@ export async function processConversationMemory(
 
   const currentMemory = await fs.readFile(memoryPath)
 
-  console.log("current memory: " + currentMemory)
+  console.log("current memory: " + currentMemory, messages)
   // Stage 1: extract candidate facts from the latest user message only.
   const newUserMessages = newMessages.filter(
     (message) => message.role === "user"
   )
-  const latestUserMessage = newUserMessages[newUserMessages.length - 1]
+
+  const recentMessages = newMessages
+    .filter((message) => message.role === "user")
+    .map((message) => message.content)
+    .join("\n\n")
 
   const extractionPrompt = fillPrompt(prompts.extraction, {
     "memory.md": currentMemory,
-    "recent messages": latestUserMessage.content,
+    "recent messages": recentMessages,
   })
 
   const extractionContent = await askOllamaJson(model, extractionPrompt)
 
-  console.log("extractionContent",extractionContent)
   const extraction = parseJson<ExtractionResult>(extractionContent)
+  console.log(
+    "extractionContent",
+    extraction,
+    extractionPrompt,
+    extractionContent
+  )
 
   if (!Array.isArray(extraction.items)) {
     throw new Error("Invalid memory extraction response")
@@ -297,10 +319,15 @@ export async function processConversationMemory(
       console.log("Filtered transient coding-task item:", item.text)
       return false
     }
+    const text = item?.text?.trim()
+    if (text && currentMemory.includes(text)) {
+      console.log("Filtered duplicate memory item already stored:", text)
+      return false
+    }
     return true
   })
 
-  console.log("candidateItems",candidateItems)
+  console.log("candidateItems", candidateItems)
   // Nothing useful to remember: advance the checkpoint safely.
   if (candidateItems.length === 0) {
     saveCheckpoint(db, conversationId, currentUserCount)
@@ -324,7 +351,7 @@ export async function processConversationMemory(
     throw new Error("Invalid memory update response")
   }
 
-  console.log('updated memory:', updateContent , updatePrompt  )
+  console.log("updated memory:", updateContent, updatePrompt)
   const updatedMemory = applyMemoryOperations(currentMemory, update.operations)
 
   // Save and verify memory BEFORE advancing the checkpoint.

@@ -15,6 +15,7 @@ import {
 } from "@/lib/memory/conversation-json";
 import { ulid } from "ulid";
 import type { Conversation, ConversationData, ConversationMessage, ConversationMetadata, DailyNote, Project } from "@/types/workspace";
+import { EmbeddingRepository } from "@/lib/embedding/embedding-repository";
 
 export class WorkspaceService {
   fs = new FileSystemService();
@@ -23,6 +24,7 @@ export class WorkspaceService {
   private messages!: MessageRepository;
   private tags!: TagRepository;
   private files!: FileRepository;
+  private embeddings!: EmbeddingRepository;
 
   // ── open / init (unchanged logic) ────────────────────────────────
 
@@ -57,6 +59,7 @@ export class WorkspaceService {
     this.messages = new MessageRepository(db);
     this.tags = new TagRepository(db);
     this.files = new FileRepository(db);
+    this.embeddings = new EmbeddingRepository(db);
     await this.rebuildIndex();
     await this.persistDb();
   }
@@ -121,7 +124,10 @@ export class WorkspaceService {
 
     // Remove stale SQLite rows
     for (const p of this.projects.list()) {
-      if (!seenPaths.has(p.relativePath)) this.projects.remove(p.id);
+      if (!seenPaths.has(p.relativePath)) {
+        this.projects.remove(p.id);
+        this.embeddings.deleteBySourcePathPrefix(p.relativePath);
+      }
     }
   }
 
@@ -172,6 +178,7 @@ export class WorkspaceService {
     if (!p) return;
     await this.fs.deleteDir(p.relativePath);
     this.projects.remove(id);
+    this.embeddings.deleteBySourcePathPrefix(p.relativePath);
     await this.persistDb();
   }
 
@@ -255,6 +262,7 @@ export class WorkspaceService {
     if (!conv) return;
     await this.fs.deleteDir(conv.relativePath);
     this.conversations.remove(id);
+    this.embeddings.deleteBySourcePathPrefix(conv.relativePath);
     await this.persistDb();
   }
 

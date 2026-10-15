@@ -60,8 +60,16 @@ export class EmbeddingRepository {
   }
 
   deleteById(id: string) {
-    this.db.run("DELETE FROM embeddings WHERE id = ?",[id]);
-}
+    this.db.run("DELETE FROM embeddings WHERE id = ?", [id])
+  }
+
+  deleteBySourcePath(sourcePath: string) {
+    this.db.run("DELETE FROM embeddings WHERE source_path = ?", [sourcePath])
+  }
+
+  deleteBySourcePathPrefix(prefix: string) {
+    this.db.run("DELETE FROM embeddings WHERE source_path LIKE ?", [`${prefix}%`])
+  }
 
   searchBySourceType(queryVec: Float32Array, model: string, limit = 5, sourceType: EmbeddingSourceType) {
     const res = this.db.exec(

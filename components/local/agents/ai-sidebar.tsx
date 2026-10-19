@@ -90,6 +90,11 @@ export interface AISidebarProps {
   onMoveError?: (error: unknown, move: SidebarResourceMove) => void
   onRename?: (item: SidebarResource, label: string) => void | Promise<void>
   onDelete?: (item: SidebarResource) => void | Promise<void>
+  /**
+   * When provided, the row delete action is handed to the caller instead of
+   * deleting immediately — lets the caller confirm before removing anything.
+   */
+  onDeleteRequest?: (item: SidebarResource) => void
   activeId?: string | null
   defaultActiveId?: string | null
   onActiveChange?: (id: string) => void
@@ -601,9 +606,12 @@ function ResourceRow({
             align="end"
             sideOffset={8}
             radius={12}
-            className="w-40 p-1.5 bg-sidebar-bg"
+            className="w-40 bg-sidebar-bg p-1.5"
           >
-            <div data-sidebar-resource-menu={row.item.id} className="bg-sidebar-bg">
+            <div
+              data-sidebar-resource-menu={row.item.id}
+              className="bg-sidebar-bg"
+            >
               {menu}
             </div>
           </MorphPopoverContent>
@@ -621,6 +629,7 @@ export function AISidebar({
   onMoveError,
   onRename,
   onDelete,
+  onDeleteRequest,
   activeId,
   defaultActiveId = null,
   onActiveChange,
@@ -968,6 +977,11 @@ export function AISidebar({
               onKeyDown={(event) => handleKeyDown(event, row)}
               onRenameStart={() => setRenamingId(row.item.id)}
               onDelete={() => {
+                if (onDeleteRequest) {
+                  const target = findResource(renderedItems, row.item.id)
+                  if (target) onDeleteRequest(target)
+                  return
+                }
                 const deleted = findResource(renderedItems, row.item.id)
                 const before = renderedItems
                 const next = removeResource(renderedItems, row.item.id)

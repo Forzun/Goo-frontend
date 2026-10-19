@@ -7,6 +7,7 @@ import {
   MessageSquarePlus,
   PanelLeft,
   Paperclip,
+  Pencil,
   Search,
   User,
   WandSparkles,
@@ -69,6 +70,7 @@ import {
   AnimatedSidebarMenuItem,
   AnimatedSidebarRail,
   AnimatedSidebarTrigger,
+  useAnimatedSidebar,
 } from "@/components/local/motion/animated-sidebar"
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
@@ -77,12 +79,9 @@ import { useParams, useRouter } from "next/navigation"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
 import { workspaceService } from "@/features/workspace/workspace-service"
-import {
-  CenterMorphModal,
-  CenterMorphModalContent,
-} from "@/components/local/motion/center-morph-modal"
+import { Modal } from "@/components/interior/modal"
+import { LoadingButton } from "@/components/interior/loading-button"
 import { Input } from "@/components/local/motion/input"
-import { Button } from "@/components/local/motion/button"
 import {
   AnimatedToastStack,
   useAnimatedToastStack,
@@ -93,6 +92,8 @@ import { ToolApprovalStatus } from "./tool-approval"
 import { updateConversationMemory } from "@/lib/memory/update-memory"
 import { EmbeddingRepository } from "@/lib/embedding/embedding-repository"
 import { indexMarkdownMemory } from "@/lib/embedding/memory-embedding"
+import Image from "next/image"
+import { ActivityGraph } from "./activity-graph"
 
 const resources: SidebarResource[] = [
   {
@@ -237,6 +238,18 @@ function AssistantIdentity({ label = "Goo" }: { label?: string }) {
   )
 }
 
+function InsetSidebarTrigger({ className }: { className?: string }) {
+  const { isMobile, open } = useAnimatedSidebar()
+
+  if (!isMobile && open) return null
+
+  return (
+    <AnimatedSidebarTrigger className={className}>
+      <PanelLeft className="size-4" />
+    </AnimatedSidebarTrigger>
+  )
+}
+
 export function ChatAppExample({
   className,
 }: Pick<ComponentProps<typeof ChatApp>, "className">) {
@@ -259,10 +272,12 @@ export function ChatAppExample({
   const [showNewConversationModal, setShowNewConversationModal] =
     useState(false)
   const [conversationName, setConversationName] = useState<string>("")
-  const [loader, setLoader] = useState<boolean>(false)
   const [currentProject, setCurrentProject] = useState("")
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [projectName, setProjectName] = useState<string>("")
+  const [pendingDelete, setPendingDelete] = useState<SidebarResource | null>(
+    null
+  )
   const { showToast, toasts } = useAnimatedToastStack({
     defaultDuration: 3600,
     limit: 5,
@@ -273,6 +288,7 @@ export function ChatAppExample({
   const { data, loading, streaming, error, send } = useResponse(model ?? "")
   const ws = useWorkspace()
 
+  const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
   // The active child in the sidebar is whatever conversation the URL points
   // at (`/local/chat/[id]`); a project row is only ever the fallback.
   const params = useParams<{ id?: string }>()
@@ -518,34 +534,6 @@ export function ChatAppExample({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, activeReply])
 
-  // async function testMemoryIndexing(conversationId: string) {
-  //   const { conversation } =
-  //     await workspaceService.getConversation(conversationId)
-
-  //   const db = await getDb()
-  //   const repository = new EmbeddingRepository(db)
-
-  //   const result = await indexMarkdownMemory(
-  //     workspaceService.fs,
-  //     `${conversation.relativePath}/memory.md`,
-  //     repository,
-  //     "nomic-embed-text"
-  //   )
-
-  //   await workspaceService.persistDb()
-
-  //   console.log("Indexing result:", result)
-
-  //   console.log(
-  //     "Embedding rows:",
-  //     db.exec(
-  //       "SELECT source_type, COUNT(*) FROM embeddings GROUP BY source_type"
-  //     )
-  //   )
-  // }
-
-  // testMemoryIndexing(activeConversationId!)
-
   const stop = () => {
     clearChatTimers()
     setPending(false)
@@ -558,17 +546,13 @@ export function ChatAppExample({
   }
 
   const handleCreateConversation = async (name: string) => {
-    setLoader(true)
-
     if (!name || name.trim().length === 0) {
       showToast({
         status: "error",
         title: "Conversation can't be empty",
         duration: 1501,
       })
-      setShowNewConversationModal(false)
-      setLoader(false)
-      return
+      throw new Error("Conversation can't be empty")
     }
 
     try {
@@ -576,9 +560,10 @@ export function ChatAppExample({
         currentProject,
         name.trim()
       )
+      setConversationName("")
+      setShowNewConversationModal(false)
       router.push(`/local/chat/${newConversation.id}`)
     } catch (error) {
-      // console.log(activeResource)
       showToast({
         status: "error",
         title:
@@ -586,29 +571,24 @@ export function ChatAppExample({
           (error instanceof Error ? error.message : String(error)),
         duration: 1501,
       })
+      throw error
     }
-
-    setConversationName("")
-    setShowNewConversationModal(false)
-    setLoader(false)
   }
 
   const handleCreateProject = async (name: string) => {
-    setLoader(true)
-
     if (!name || name.trim().length === 0) {
       showToast({
         status: "error",
         title: "Project can't be empty",
         duration: 1501,
       })
-      setShowNewProjectModal(false)
-      setLoader(false)
-      return
+      throw new Error("Project can't be empty")
     }
 
     try {
       await ws.createProject(name.trim())
+      setProjectName("")
+      setShowNewProjectModal(false)
     } catch (error) {
       showToast({
         status: "error",
@@ -617,14 +597,51 @@ export function ChatAppExample({
           (error instanceof Error ? error.message : String(error)),
         duration: 1501,
       })
+      throw error
     }
+  }
 
-    setProjectName("")
-    setShowNewProjectModal(false)
-    setLoader(false)
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return
+    const item = pendingDelete
+    const isProject = item.kind === "project"
+
+    try {
+      if (isProject) {
+        await workspaceService.deleteProject(item.id)
+        if (projectResource === item.id) {
+          setProjectResource(null)
+          router.push("/local")
+        }
+      } else {
+        await workspaceService.deleteConversation(item.id)
+        if (activeConversationId === item.id) {
+          router.push("/local")
+        }
+      }
+
+      ws.refresh()
+      setPendingDelete(null)
+      showToast({
+        status: "success",
+        title: isProject ? "Project deleted" : "Conversation deleted",
+        duration: 1501,
+      })
+    } catch (error) {
+      showToast({
+        status: "error",
+        title:
+          "Failed to delete: " +
+          (error instanceof Error ? error.message : String(error)),
+        duration: 1501,
+      })
+      throw error
+    }
   }
 
   const busy = pending || activeReply !== null
+  const isBlankSlate = !activeConversationId && !projectResource
+  const showWelcome = isBlankSlate && messages.length === 0 && !busy
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
@@ -642,6 +659,18 @@ export function ChatAppExample({
         <AnimatedSidebarContent className="gap-4 overflow-hidden px-2 py-4">
           <AnimatedSidebarGroup className="shrink-0 px-1 py-0">
             <AnimatedSidebarGroupContent>
+              <div className="mb-1 flex items-center justify-between">
+                <Image
+                  src="/logo/Goo.avif"
+                  alt="logo"
+                  width={35}
+                  height={35}
+                  className="ml-1 rounded-lg border border-neutral-800 p-0.5"
+                />
+                <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
+                  <PanelLeft className="size-4" />
+                </AnimatedSidebarTrigger>
+              </div>
               <AnimatedSidebarMenu className="gap-1">
                 {[
                   {
@@ -710,6 +739,7 @@ export function ChatAppExample({
                       }
                     }}
                     onItemsChange={setItems}
+                    onDeleteRequest={setPendingDelete}
                   />
                 ) : null}
               </div>
@@ -724,31 +754,14 @@ export function ChatAppExample({
       </AnimatedSidebar>
 
       <AnimatedSidebarInset className="min-h-0 bg-main-bg text-body text-text-primary">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
-              <PanelLeft className="size-4" />
-            </AnimatedSidebarTrigger>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {activeTitle ?? "New chat"}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {activeTitle
-                  ? "Agent workspace"
-                  : "Pick a conversation to start"}
-              </p>
-            </div>
-          </div>
-          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-            Connected
-          </span>
+        <header className="h-14 px-4">
+          <InsetSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground" />
         </header>
 
         <MessageScroller
           busy={busy}
           navigation="rail"
-          className="min-h-0 flex-1"
+          className={cn("min-h-0", isBlankSlate ? "hidden" : "flex-1")}
           viewportClassName="px-3 py-5 sm:px-5"
           contentClassName="mx-auto min-h-full w-full max-w-3xl"
         >
@@ -951,8 +964,27 @@ export function ChatAppExample({
           </MessageGroup>
         </MessageScroller>
 
-        <div className="shrink-0 pb-3">
-          <div className="mx-auto max-w-3xl">
+        <div
+          className={cn(
+            "shrink-0 pb-3",
+            isBlankSlate &&
+              "flex flex-1 flex-col items-center justify-center pb-0"
+          )}
+        >
+          {showWelcome ? (
+            <h1
+              style={{ ...pixel }}
+              className="text-9xl font-normal tracking-tight"
+            >
+              GOO
+            </h1>
+          ) : null}
+          <div
+            className={cn(
+              "mx-auto w-full",
+              isBlankSlate ? "max-w-2xl" : "max-w-3xl"
+            )}
+          >
             <PromptInput
               className="border-edge text-placeholder border bg-input-bg text-body"
               value={input}
@@ -986,93 +1018,124 @@ export function ChatAppExample({
                 },
               ]}
             />
+            {/* adding active calander here */}
+            {showWelcome ? <ActivityGraph className="mt-4" /> : null}
           </div>
         </div>
-        {showNewConversationModal && (
-          <CenterMorphModal
-            open={showNewConversationModal}
-            onOpenChange={setShowNewConversationModal}
-          >
-            <CenterMorphModalContent
-              ariaLabel="New Conversation"
-              className="max-w-md"
-            >
-              <div className="p-6">
-                <h2 className="mb-6 text-lg font-semibold">
-                  Create New Conversation
-                </h2>
-                <Input
-                  value={conversationName}
-                  type="text"
-                  onChange={(e) => setConversationName(e)}
-                  placeholder="Conversation title..."
-                  className="mb-4"
-                  autoFocus
-                />
-                <div className="flex justify-end gap-3">
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    onClick={() => setShowNewConversationModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={() => {
-                      handleCreateConversation(conversationName)
-                      // TODO: create conversation
-                    }}
-                  >
-                    Create
-                  </Button>
-                </div>
-              </div>
-            </CenterMorphModalContent>
-          </CenterMorphModal>
-        )}
-        {showNewProjectModal && (
-          <CenterMorphModal
-            open={showNewProjectModal}
-            onOpenChange={setShowNewProjectModal}
-          >
-            <CenterMorphModalContent
-              ariaLabel="New Project"
-              className="max-w-md"
-            >
-              <div className="p-6">
-                <h2 className="mb-6 text-lg font-semibold">
-                  Create New Project
-                </h2>
-                <Input
-                  value={projectName}
-                  type="text"
-                  onChange={(e) => setProjectName(e)}
-                  placeholder="Project title..."
-                  className="mb-4"
-                  autoFocus
-                />
-                <div className="flex justify-end gap-3">
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    onClick={() => setShowNewProjectModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={() => handleCreateProject(projectName)}
-                  >
-                    Create
-                  </Button>
-                </div>
-              </div>
-            </CenterMorphModalContent>
-          </CenterMorphModal>
-        )}
+        <Modal
+          open={showNewConversationModal}
+          onClose={() => setShowNewConversationModal(false)}
+          title="Create New Conversation"
+          description="Give your conversation a name to get started."
+          footer={
+            <>
+              <LoadingButton
+                onAction={() => setShowNewConversationModal(false)}
+              >
+                Cancel
+              </LoadingButton>
+              <LoadingButton
+                tone="primary"
+                pendingLabel="Creating…"
+                successLabel="Created"
+                errorLabel="Try again"
+                onAction={() => handleCreateConversation(conversationName)}
+              >
+                Create
+              </LoadingButton>
+            </>
+          }
+        >
+          <Input
+            value={conversationName}
+            type="text"
+            onChange={(e) => setConversationName(e)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleCreateConversation(conversationName).catch(() => {})
+              }
+            }}
+            placeholder="Conversation title..."
+            classNames={{ field: "rounded-lg" }}
+            className="text-text-muted"
+            autoFocus
+          />
+        </Modal>
+        <Modal
+          open={showNewProjectModal}
+          onClose={() => setShowNewProjectModal(false)}
+          title="Create New Project"
+          description="Give your project a name to get started."
+          footer={
+            <>
+              <LoadingButton onAction={() => setShowNewProjectModal(false)}>
+                Cancel
+              </LoadingButton>
+              <LoadingButton
+                tone="primary"
+                pendingLabel="Creating…"
+                successLabel="Created"
+                errorLabel="Try again"
+                onAction={() => handleCreateProject(projectName)}
+              >
+                Create
+              </LoadingButton>
+            </>
+          }
+        >
+          <Input
+            value={projectName}
+            type="text"
+            onChange={(e) => setProjectName(e)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleCreateProject(projectName).catch(() => {})
+              }
+            }}
+            placeholder="Project title..."
+            classNames={{ field: "rounded-lg" }}
+            className="text-text-muted"
+            autoFocus
+          />
+        </Modal>
+        <Modal
+          open={pendingDelete !== null}
+          onClose={() => setPendingDelete(null)}
+          title={
+            pendingDelete?.kind === "project"
+              ? "Delete project"
+              : "Delete conversation"
+          }
+          description={
+            pendingDelete
+              ? `Are you sure you want to delete "${
+                  pendingDelete.label
+                }"? This ${
+                  pendingDelete.kind === "project" ? "project" : "conversation"
+                } will be permanently removed.`
+              : undefined
+          }
+          footer={
+            <>
+              <LoadingButton onAction={() => setPendingDelete(null)}>
+                Cancel
+              </LoadingButton>
+              <LoadingButton
+                tone="destructive"
+                pendingLabel="Deleting…"
+                successLabel="Deleted"
+                errorLabel="Try again"
+                onAction={handleConfirmDelete}
+              >
+                Delete
+              </LoadingButton>
+            </>
+          }
+        >
+          <p className="text-neutral-500 dark:text-neutral-400">
+            This action can&apos;t be undone.
+          </p>
+        </Modal>
       </AnimatedSidebarInset>
     </ChatApp>
   )

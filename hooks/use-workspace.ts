@@ -11,6 +11,19 @@ interface WorkspaceStatus {
   conversations: Conversation[]
 }
 
+let openPromise: Promise<"restored" | "new"> | null = null
+
+function openWorkspaceOnce(): Promise<"restored" | "new"> {
+  if (!openPromise) {
+    openPromise = workspaceService.open().catch((error) => {
+      openPromise = null
+      throw error
+    })
+  }
+
+  return openPromise
+}
+
 export function useWorkspace() {
   const [status, setStatus] = useState<WorkspaceStatus>({
     status: "loading",
@@ -34,8 +47,7 @@ export function useWorkspace() {
   }, [])
 
   useEffect(() => {
-    workspaceService
-      .open()
+    openWorkspaceOnce()
       .then((result) => {
         if (result === "restored") {
           workspaceService.fs
@@ -84,6 +96,7 @@ export function useWorkspace() {
   const selectWorkspace = useCallback(
     async (name: string) => {
       await workspaceService.selectAndInit(name)
+      openPromise = Promise.resolve("restored")
       refresh()
     },
     [refresh]

@@ -20,7 +20,6 @@ export class FileSystemService {
     const permission = await handle.queryPermission({ mode: "readwrite" })
 
     if (permission !== "granted") {
-      await deleteHandleFromDb("localgoo-workspace");
       return null
     }
 

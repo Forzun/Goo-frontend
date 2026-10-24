@@ -58,9 +58,9 @@ export interface Tag {
 }
 
 export interface DailyNote {
-    date: string;
-    content: string;
-  messageCount?: number;
+  date: string
+  content?: string
+  messageCount: number
 }
 
 

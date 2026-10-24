@@ -80,7 +80,10 @@ export function serializeMetadata(m: {
 // ── daily ────────────────────────────────────────────────────────────
 
 export function dailyFileName(date: Date): string {
-  return date.toISOString().slice(0, 10) + ".md"; // 2026-09-23.md
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}.md` // 2026-09-23.md
 }
 
 export function dailyHeader(date: Date): string {
@@ -88,5 +91,14 @@ export function dailyHeader(date: Date): string {
 }
 
 export function appendActivity(existing: string, activity: DailyNote): string {
-  return existing.trimEnd() + `\n- ${activity}\n`;
+  const label = activity.content?.trim() || "User message";
+  return existing.trimEnd() + `\n- ${activity.date} · ${label}\n`;
+}
+
+export function countDailyActivity(markdown: string): number {
+  const activitySection = markdown.split(/^## Activity\s*$/m)[1];
+  if (!activitySection) return 0;
+  return activitySection
+    .split("\n")
+    .filter((line) => /^\s*-\s+/.test(line)).length;
 }

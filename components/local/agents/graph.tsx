@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ActivityCalendar } from "react-activity-calendar"
+import "react-activity-calendar/tooltips.css"
 
 import { cn } from "@/lib/utils"
 
@@ -9,6 +10,38 @@ export type DailyActivity = {
   date: string // YYYY-MM-DD
   count: number
   level: number // 0–4
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+export function activityRange(now: Date = new Date()): {
+  start: string
+  end: string
+} {
+  return {
+    start: toDateKey(new Date(now.getFullYear(), 0, 1)),
+    end: toDateKey(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  }
+}
+
+function activityTooltip(activity: { date: string; count: number }) {
+  const date = new Date(`${activity.date}T00:00:00`).toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  )
+
+  return `${date} · ${activity.count} total ${
+    activity.count === 1 ? "message" : "messages"
+  } with AI`
 }
 
 /**
@@ -58,25 +91,60 @@ export function DailyActivityGraph({
     if (!data || data.length === 0) return []
     if (!padToYear) return data
 
-    // Determine the target year from the first date entry or fallback to current year
-    const year = data[0]?.date
-      ? new Date(data[0].date).getFullYear()
-      : new Date().getFullYear()
-    const startDate = `${year}-01-01`
-    const endDate = `${year}-12-31`
+    // Show the current year from January through the current month.
+    const { start: startDate, end: endDate } = activityRange()
 
     const map = new Map<string, DailyActivity>()
-    // Ensure Jan 1 and Dec 31 anchor boundaries exist so react-activity-calendar
-    // renders the full 52-week calendar grid and all month labels
+    // Anchor the range boundaries so react-activity-calendar renders every
+    // week and month label between them.
     map.set(startDate, { date: startDate, count: 0, level: 0 })
     map.set(endDate, { date: endDate, count: 0, level: 0 })
 
     for (const item of data) {
+      if (item.date < startDate || item.date > endDate) continue
       map.set(item.date, item)
     }
 
     return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date))
   }, [data, padToYear])
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width
+      if (width) setContainerWidth(width)
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  const { blockSize, blockMargin, fontSize } = useMemo(() => {
+    const margin = 3
+    if (!normalizedData.length || !containerWidth) {
+      return { blockSize: 10, blockMargin: margin, fontSize: 11 }
+    }
+
+    const start = new Date(`${normalizedData[0].date}T00:00:00`)
+    const end = new Date(
+      `${normalizedData[normalizedData.length - 1].date}T00:00:00`
+    )
+    const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1
+    const firstWeekday = start.getDay()
+    const weeks = Math.ceil((days + firstWeekday) / 7)
+    const size = Math.floor((containerWidth - margin * (weeks - 1)) / weeks)
+
+    return {
+      blockSize: Math.max(4, size),
+      blockMargin: margin,
+      fontSize: Math.max(8, size),
+    }
+  }, [normalizedData, containerWidth])
 
   if (!normalizedData || normalizedData.length === 0) return null
 
@@ -88,7 +156,7 @@ export function DailyActivityGraph({
         The more you chat or assign tasks, the closer you grow.
       </p> */}
 
-      <div className="w-full [scrollbar-width:none] overflow-x-auto [&::-webkit-scrollbar]:hidden">
+      <div ref={containerRef} className="w-full overflow-hidden">
         <ActivityCalendar
           data={normalizedData}
           colorScheme="dark"
@@ -101,12 +169,19 @@ export function DailyActivityGraph({
               "#FF6D00", // Highest — your main color
             ],
           }}
-          blockSize={10}
-          blockMargin={3}
-          blockRadius={2}
-          fontSize={11}
+          blockSize={blockSize}
+          blockMargin={blockMargin}
+          blockRadius={20}
+          fontSize={fontSize}
           showColorLegend={false}
           showTotalCount={false}
+          tooltips={{
+            activity: {
+              text: activityTooltip,
+              placement: "top",
+              withArrow: true,
+            },
+          }}
         />
       </div>
     </section>

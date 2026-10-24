@@ -94,6 +94,9 @@ import { EmbeddingRepository } from "@/lib/embedding/embedding-repository"
 import { indexMarkdownMemory } from "@/lib/embedding/memory-embedding"
 import Image from "next/image"
 import { ActivityGraph } from "./activity-graph"
+import type { DailyActivity } from "./graph"
+import { GooFaceIcon } from "./goo-face-icon"
+import Link from "next/link"
 
 const resources: SidebarResource[] = [
   {
@@ -278,6 +281,7 @@ export function ChatAppExample({
   const [pendingDelete, setPendingDelete] = useState<SidebarResource | null>(
     null
   )
+  const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([])
   const { showToast, toasts } = useAnimatedToastStack({
     defaultDuration: 3600,
     limit: 5,
@@ -287,6 +291,29 @@ export function ChatAppExample({
   const { models } = useFetchModels()
   const { data, loading, streaming, error, send } = useResponse(model ?? "")
   const ws = useWorkspace()
+
+  const loadDailyActivity = useCallback(async () => {
+    const activity = await workspaceService.getDailyActivity()
+    setDailyActivity(activity)
+  }, [])
+
+  useEffect(() => {
+    if (ws.status !== "ready") return
+
+    let cancelled = false
+    workspaceService
+      .getDailyActivity()
+      .then((activity) => {
+        if (!cancelled) setDailyActivity(activity)
+      })
+      .catch(() => {
+        // Leave the calendar empty when the daily notes can't be read.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [ws.status])
 
   const pixel = { fontFamily: "var(--font-vt323), monospace" } as const
   // The active child in the sidebar is whatever conversation the URL points
@@ -361,7 +388,7 @@ export function ChatAppExample({
     ]
   }
 
-  const submit = async (value: string) => {
+  const submit = async (value: string, selectedModel?: string) => {
     if (!value.trim() || pending || activeReply) return
     const id = runId.current++
     const assistantId = `assistant-${id}`
@@ -388,6 +415,23 @@ export function ChatAppExample({
           })
         })
     }
+
+    const now = new Date()
+    const activityModel = selectedModel ?? model ?? models?.[0]?.name
+    workspaceService
+      .appendDailyActivity(now, {
+        date: now.toISOString(),
+        content: `User message${activityModel ? ` · ${activityModel}` : ""}`,
+        messageCount: 1,
+      })
+      .then(() => loadDailyActivity())
+      .catch(() => {
+        showToast({
+          status: "error",
+          title: "Couldn't save daily activity",
+          duration: 1501,
+        })
+      })
 
     send(value)
   }
@@ -441,9 +485,19 @@ export function ChatAppExample({
   // Note: this must not touch `activeConversationRef` — that tracks which
   // conversation owns the in-flight turn, even if the route moves on.
   useEffect(() => {
-    if (!activeConversationId) return
-
     let cancelled = false
+
+    if (!activeConversationId) {
+      Promise.resolve().then(() => {
+        if (cancelled) return
+        setActiveTitle(null)
+        setMessages([])
+      })
+
+      return () => {
+        cancelled = true
+      }
+    }
 
     async function initDb() {
       const db = await getDb()
@@ -660,6 +714,14 @@ export function ChatAppExample({
           <AnimatedSidebarGroup className="shrink-0 px-1 py-0">
             <AnimatedSidebarGroupContent>
               <div className="mb-1 flex items-center justify-between">
+                <Link
+                  href="/local"
+                  onClick={() => {
+                    setProjectResource(null)
+                    setActiveTitle(null)
+                    setMessages([])
+                  }}
+                >
                 <Image
                   src="/logo/Goo.avif"
                   alt="logo"
@@ -667,6 +729,7 @@ export function ChatAppExample({
                   height={35}
                   className="ml-1 rounded-lg border border-neutral-800 p-0.5"
                 />
+                </Link>
                 <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
                   <PanelLeft className="size-4" />
                 </AnimatedSidebarTrigger>
@@ -689,7 +752,16 @@ export function ChatAppExample({
                     ),
                     action: () => setShowNewProjectModal(true),
                   },
-                  { label: "Search", icon: Search },
+                  {
+                    label: "Search",
+                    icon: Search,
+                    action: () => router.push("/local/search"),
+                  },
+                  {
+                    label: "MyGoo",
+                    icon: GooFaceIcon,
+                    action: () => router.push("/local/myGoo"),
+                  },
                   { label: "Runs", icon: Clock3 },
                 ].map(({ label, icon: Icon, active, badge, action }) => (
                   <AnimatedSidebarMenuItem key={label}>
@@ -1019,7 +1091,9 @@ export function ChatAppExample({
               ]}
             />
             {/* adding active calander here */}
-            {showWelcome ? <ActivityGraph className="mt-4" /> : null}
+            {showWelcome ? (
+              <ActivityGraph data={dailyActivity} className="mt-4" />
+            ) : null}
           </div>
         </div>
         <Modal

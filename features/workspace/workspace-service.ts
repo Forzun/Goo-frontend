@@ -1,4 +1,4 @@
-import { FileSystemService } from "@/lib/filesystem/fs-service";
+import { workspaceFs } from "@/lib/filesystem/workspace-fs";
 import { loadDbFromFiles , exportDb } from "@/lib/sqlit/db";
 import {
   ProjectRepository,
@@ -14,11 +14,11 @@ import {
   appendMessageToConversation,
 } from "@/lib/memory/conversation-json";
 import { ulid } from "ulid";
-import type { Conversation, ConversationData, ConversationMessage, ConversationMetadata, DailyNote, Project } from "@/types/workspace";
+import type { Conversation, ConversationData, ConversationMessage, DailyNote, Project } from "@/types/workspace";
 import { EmbeddingRepository } from "@/lib/embedding/embedding-repository";
 
 export class WorkspaceService {
-  fs = new FileSystemService();
+  fs = workspaceFs;
   private projects!: ProjectRepository;
   private conversations!: ConversationRepository;
   private messages!: MessageRepository;
@@ -302,6 +302,13 @@ export class WorkspaceService {
     const path = `daily/${dailyFileName(date)}`;
     const existing = await this.getDailyNote(date);
     await this.fs.writeFile(path, appendActivity(existing, activity));
+  }
+
+  async getDailyActivity(): Promise<
+    { date: string; count: number; level: number }[]
+  > {
+    const { readDailyActivity } = await import("@/lib/memory/daily-activity");
+    return readDailyActivity(this.fs);
   }
 
   listTags() {

@@ -1,10 +1,19 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+} from "motion/react"
 
 import { ActivityGraph } from "@/components/local/agents/activity-graph"
 import type { DailyActivity } from "@/components/local/agents/graph"
 import { GooFaceIcon } from "@/components/local/agents/goo-face-icon"
+import { useHoverCapable } from "@/hooks/use-hover-capable"
+import { SPRING_MOUSE } from "@/lib/ease"
 import { workspaceFs } from "@/lib/filesystem/workspace-fs"
 import { readDailyActivity } from "@/lib/memory/daily-activity"
 import { cn } from "@/lib/utils"
@@ -59,7 +68,43 @@ function dateKey(date: Date) {
 function GrowthFace() {
   const columns = 13
   const rows = 10
+  const faceRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  const canHover = useHoverCapable()
+  const canTrack = !reduceMotion && canHover
+  const eyeX = useMotionValue(0)
+  const eyeY = useMotionValue(0)
+  const eyeBlink = useMotionValue(1)
+  const springX = useSpring(eyeX, SPRING_MOUSE)
+  const springY = useSpring(eyeY, SPRING_MOUSE)
   const dots: React.ReactNode[] = []
+
+  function handleClick() {
+    animate(eyeBlink, [1, 0.12, 1], {
+      duration: 0.28,
+      times: [0, 0.45, 1],
+      ease: "easeInOut",
+    })
+  }
+
+  function handlePointerMove(event: React.MouseEvent<HTMLDivElement>) {
+    const face = faceRef.current
+    if (!face || !canTrack) return
+
+    const rect = face.getBoundingClientRect()
+    const relativeX = (event.clientX - rect.left) / rect.width - 0.5
+    const relativeY = (event.clientY - rect.top) / rect.height - 0.5
+    const clamp = (value: number) => Math.max(-1, Math.min(1, value))
+    const maxShift = 5
+
+    eyeX.set(clamp(relativeX * 2) * maxShift)
+    eyeY.set(clamp(relativeY * 2) * maxShift)
+  }
+
+  function handlePointerLeave() {
+    eyeX.set(0)
+    eyeY.set(0)
+  }
 
   for (let row = 0; row < rows; row++) {
     for (let column = 0; column < columns; column++) {
@@ -71,13 +116,24 @@ function GrowthFace() {
         row >= 2 &&
         row <= 5
 
+      if (isEye) {
+        dots.push(
+          <motion.span
+            key={`${column}-${row}`}
+            className="size-2 rounded-full bg-white"
+            style={{ x: springX, y: springY, scaleY: eyeBlink }}
+          />
+        )
+        continue
+      }
+
       dots.push(
         <span
           key={`${column}-${row}`}
           className="size-2 rounded-full"
           style={{
-            backgroundColor: isEye ? "#ffffff" : "#1e90ff",
-            opacity: isEye ? 1 : Math.max(0.14, 1 - distance / 6.5),
+            backgroundColor: "#FF6D00",
+            opacity: Math.max(0.14, 1 - distance / 6.5),
           }}
         />
       )
@@ -86,9 +142,13 @@ function GrowthFace() {
 
   return (
     <div className="relative flex items-center justify-center py-4">
-      <div className="absolute size-44 rounded-full bg-[#1e90ff]/20 blur-3xl" />
+      <div className="absolute size-44 rounded-full bg-[#FF6D00]/20 blur-3xl" />
       <div
-        className="relative grid gap-1.5"
+        ref={faceRef}
+        onClick={handleClick}
+        onMouseMove={handlePointerMove}
+        onMouseLeave={handlePointerLeave}
+        className="relative grid cursor-pointer gap-1.5"
         style={{
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         }}
@@ -166,23 +226,21 @@ export default function MyGooPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="mx-auto w-full max-w-2xl px-6 py-12">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <GooFaceIcon className="size-8 text-[#1e90ff]" />
-            <h1 className="mt-4 text-xl font-semibold tracking-tight">MyGoo</h1>
-          </div>
-          <Button type="button" className={cn(buttonClass, "mt-3")}>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <GooFaceIcon className="size-8 text-[#FF6D00]" />
+          <h1 className="text-xl font-semibold tracking-tight">MyGoo</h1>
+          <Button type="button" className={buttonClass}>
             Enable self-growth
           </Button>
         </div>
 
-        <p className="mt-2 text-sm text-neutral-400">
+        <p className="mt-4 text-center text-sm text-neutral-400">
           Goo has been with you for {stats.daysTogether} days across{" "}
           {stats.totalChats} chats, and we&apos;ve chatted {stats.streak} days
           in a row
         </p>
 
-        <div className="mt-5 flex items-center gap-2">
+        <div className="mt-5 flex items-center justify-center gap-2">
           {(["Closeness", "Growth"] as const).map((label) => {
             const value = label.toLowerCase() as "closeness" | "growth"
             return (
@@ -203,14 +261,14 @@ export default function MyGooPage() {
           })}
         </div>
 
-        <p className="mt-4 text-xs text-neutral-400">
+        <p className="mt-4 text-center text-xs text-neutral-400">
           The more you chat or assign tasks, the closer you grow
         </p>
 
         <ActivityGraph data={activity} className="mt-3" />
 
-        <div className="mt-10 grid items-center gap-8 sm:grid-cols-2">
-          <div>
+        <div className="mt-10 grid items-center justify-items-center gap-8 text-center sm:grid-cols-2">
+          <div className="flex flex-col items-center">
             <h2 className="text-base font-medium">
               MyGoo can now learn and grow on its own
             </h2>

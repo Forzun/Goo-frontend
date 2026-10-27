@@ -212,6 +212,13 @@ const TONE_TEXT: Record<LoadingButtonTone, { idle: string; pending: string }> =
     },
   }
 
+export type LoadingButtonColors = {
+  idle?: string
+  pending?: string
+  success?: string
+  error?: string
+}
+
 export type LoadingButtonProps = {
   onAction: () => unknown
   children: string
@@ -222,6 +229,7 @@ export type LoadingButtonProps = {
   disabled?: boolean
   onError?: (error: unknown) => void
   tone?: LoadingButtonTone
+  colors?: LoadingButtonColors
   className?: string
 }
 
@@ -235,6 +243,7 @@ export function LoadingButton({
   disabled = false,
   onError,
   tone = "neutral",
+  colors,
   className = "",
 }: LoadingButtonProps) {
   const reduced = useReducedMotion()
@@ -257,30 +266,36 @@ export function LoadingButton({
           : children
 
   const toneText = TONE_TEXT[tone]
+  const stateText = {
+    idle: colors?.idle ?? toneText.idle,
+    pending: colors?.pending ?? toneText.pending,
+    success: colors?.success ?? "text-emerald-600 dark:text-emerald-400",
+    error: colors?.error ?? "text-red-600 dark:text-red-400",
+  }
 
   const faces = [
     {
       key: "idle",
       text: children,
-      tone: toneText.idle,
+      tone: stateText.idle,
       icon: null,
     },
     {
       key: "pending",
       text: pendingLabel,
-      tone: toneText.pending,
+      tone: stateText.pending,
       icon: <Spinner still={reduced === true || status !== "pending"} />,
     },
     {
       key: "success",
       text: successLabel,
-      tone: "text-emerald-600 dark:text-emerald-400",
+      tone: stateText.success,
       icon: <CheckMark />,
     },
     {
       key: "error",
       text: errorLabel,
-      tone: "text-red-600 dark:text-red-400",
+      tone: stateText.error,
       icon: <AlertMark />,
     },
   ]

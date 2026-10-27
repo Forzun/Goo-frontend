@@ -17,7 +17,7 @@ import { SPRING_MOUSE } from "@/lib/ease"
 import { workspaceFs } from "@/lib/filesystem/workspace-fs"
 import { readDailyActivity } from "@/lib/memory/daily-activity"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/interior/loading-button"
 
 const buttonClass =
   "rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-white"
@@ -224,14 +224,11 @@ export default function MyGooPage() {
   }, [activity])
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="flex min-h-screen items-center justify-center bg-main-bg text-white pb-20">
       <div className="mx-auto w-full max-w-2xl px-6 py-12">
         <div className="flex flex-col items-center gap-3 text-center">
-          <GooFaceIcon className="size-8 text-[#FF6D00]" />
+          <GooFaceIcon className="size-8 text-text-primary" />
           <h1 className="text-xl font-semibold tracking-tight">MyGoo</h1>
-          <Button type="button" className={buttonClass}>
-            Enable self-growth
-          </Button>
         </div>
 
         <p className="mt-4 text-center text-sm text-neutral-400">
@@ -273,13 +270,16 @@ export default function MyGooPage() {
               MyGoo can now learn and grow on its own
             </h2>
             <p className="mt-3 max-w-sm text-xs leading-relaxed text-neutral-400">
-              Once enabled, Goo keeps learning your preferences, habits, and
-              ways of working, making every collaboration the start of the next
-              one.
+              Goo keeps learning your preferences, habits, and ways of working,
+              making every collaboration the start of the next one.
             </p>
-            <button type="button" className={cn(buttonClass, "mt-5")}>
-              Enable self-growth
-            </button>
+            <LoadingButton
+              onAction={() => {}}
+              colors={{ success: "text-[#FF6D00]" }}
+              className={cn("mt-5 w-fit", buttonClass)}
+            >
+              self-growth
+            </LoadingButton>
           </div>
 
           <GrowthFace />

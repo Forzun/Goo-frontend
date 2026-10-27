@@ -13,7 +13,7 @@ export default function WorkspaceChatLayout({
 
   if (status === "loading") {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex h-screen items-center justify-center">
         Loading workspace…
       </div>
     )
@@ -24,11 +24,10 @@ export default function WorkspaceChatLayout({
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden">
       <div className="min-h-0 flex-1">
-        <ChatAppExample className="h-full" />
+        <ChatAppExample className="h-full">{children}</ChatAppExample>
       </div>
-      {children}
     </div>
   )
 }

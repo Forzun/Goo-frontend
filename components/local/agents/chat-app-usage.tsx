@@ -75,7 +75,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useFetchModels } from "@/hooks/use-models"
 import { useResponse } from "@/hooks/use-response"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, usePathname, useRouter } from "next/navigation"
 import ParsedMessage from "./parsed-message"
 import { useWorkspace } from "@/hooks/use-workspace"
 import { workspaceService } from "@/features/workspace/workspace-service"
@@ -255,7 +255,10 @@ function InsetSidebarTrigger({ className }: { className?: string }) {
 
 export function ChatAppExample({
   className,
-}: Pick<ComponentProps<typeof ChatApp>, "className">) {
+  children,
+}: Pick<ComponentProps<typeof ChatApp>, "className"> & {
+  children?: React.ReactNode
+}) {
   const router = useRouter()
   const toolTimers = useRef<number[]>([])
   const chatTimers = useRef<number[]>([])
@@ -319,6 +322,7 @@ export function ChatAppExample({
   // The active child in the sidebar is whatever conversation the URL points
   // at (`/local/chat/[id]`); a project row is only ever the fallback.
   const params = useParams<{ id?: string }>()
+  const pathname = usePathname()
   const activeConversationId = params?.id
   const activeResource = activeConversationId ?? projectResource
   const activeConversationRef = useRef<string | null>(null)
@@ -696,13 +700,17 @@ export function ChatAppExample({
   const busy = pending || activeReply !== null
   const isBlankSlate = !activeConversationId && !projectResource
   const showWelcome = isBlankSlate && messages.length === 0 && !busy
+  const hasPageContent =
+    pathname?.startsWith("/local/myGoo") ||
+    pathname?.startsWith("/local/project")
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
       <AnimatedToastStack
         toasts={toasts}
         position="top-center"
-        className="absolute top-10"
+        placement="absolute"
+        className="top-10"
       />
       <AnimatedSidebar
         ariaLabel="Agent workspace"
@@ -722,13 +730,13 @@ export function ChatAppExample({
                     setMessages([])
                   }}
                 >
-                <Image
-                  src="/logo/Goo.avif"
-                  alt="logo"
-                  width={35}
-                  height={35}
-                  className="ml-1 rounded-lg border border-neutral-800 p-0.5"
-                />
+                  <Image
+                    src="/logo/Goo.avif"
+                    alt="logo"
+                    width={35}
+                    height={35}
+                    className="ml-1 rounded-lg border border-neutral-800 p-0.5"
+                  />
                 </Link>
                 <AnimatedSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground">
                   <PanelLeft className="size-4" />
@@ -830,10 +838,17 @@ export function ChatAppExample({
           <InsetSidebarTrigger className="text-muted-foreground hover:bg-muted hover:text-foreground" />
         </header>
 
+        {hasPageContent ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        ) : null}
+
         <MessageScroller
           busy={busy}
           navigation="rail"
-          className={cn("min-h-0", isBlankSlate ? "hidden" : "flex-1")}
+          className={cn(
+            "min-h-0",
+            isBlankSlate || hasPageContent ? "hidden" : "flex-1"
+          )}
           viewportClassName="px-3 py-5 sm:px-5"
           contentClassName="mx-auto min-h-full w-full max-w-3xl"
         >
@@ -1040,7 +1055,9 @@ export function ChatAppExample({
           className={cn(
             "shrink-0 pb-3",
             isBlankSlate &&
-              "flex flex-1 flex-col items-center justify-center pb-0"
+              !hasPageContent &&
+              "flex flex-1 flex-col items-center justify-center pb-0",
+            hasPageContent && "hidden"
           )}
         >
           {showWelcome ? (
@@ -1064,6 +1081,22 @@ export function ChatAppExample({
               loading={busy}
               onStop={stop}
               onSubmit={submit}
+              requireModel
+              onModelRequired={() => {
+                if (
+                  toasts.some(
+                    (toast) => toast.title === "Select a model first"
+                  )
+                ) {
+                  return
+                }
+                showToast({
+                  status: "error",
+                  title: "Select a model first",
+                  description: "Choose a model to send your message.",
+                  duration: 3000,
+                })
+              }}
               minRows={1}
               maxRows={4}
               placeholder="Ask the agent to continue…"

@@ -18,9 +18,7 @@ import { workspaceFs } from "@/lib/filesystem/workspace-fs"
 import { readDailyActivity } from "@/lib/memory/daily-activity"
 import { cn } from "@/lib/utils"
 import { LoadingButton } from "@/components/interior/loading-button"
-
-const buttonClass =
-  "rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-white"
+import { pixel } from "@/app/page"
 
 const ACTIVITY_CACHE_KEY = "localgoo:daily-activity"
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -65,7 +63,7 @@ function dateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function GrowthFace() {
+function GrowthFace({ blinkSignal = 0 }: { blinkSignal?: number }) {
   const columns = 13
   const rows = 10
   const faceRef = useRef<HTMLDivElement>(null)
@@ -75,6 +73,7 @@ function GrowthFace() {
   const eyeX = useMotionValue(0)
   const eyeY = useMotionValue(0)
   const eyeBlink = useMotionValue(1)
+  const initialBlinkSignal = useRef(blinkSignal)
   const springX = useSpring(eyeX, SPRING_MOUSE)
   const springY = useSpring(eyeY, SPRING_MOUSE)
   const dots: React.ReactNode[] = []
@@ -86,6 +85,17 @@ function GrowthFace() {
       ease: "easeInOut",
     })
   }
+
+  useEffect(() => {
+    if (blinkSignal === initialBlinkSignal.current) return
+    initialBlinkSignal.current = blinkSignal
+
+    animate(eyeBlink, [1, 0.12, 1], {
+      duration: 0.28,
+      times: [0, 0.45, 1],
+      ease: "easeInOut",
+    })
+  }, [blinkSignal, eyeBlink])
 
   function handlePointerMove(event: React.MouseEvent<HTMLDivElement>) {
     const face = faceRef.current
@@ -162,6 +172,7 @@ function GrowthFace() {
 export default function MyGooPage() {
   const [activity, setActivity] = useState<DailyActivity[]>([])
   const [tab, setTab] = useState<"closeness" | "growth">("closeness")
+  const [blinkSignal, setBlinkSignal] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -224,11 +235,16 @@ export default function MyGooPage() {
   }, [activity])
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-main-bg text-white pb-20">
+    <main className="flex min-h-full items-center justify-center bg-main-bg pb-20 text-white">
       <div className="mx-auto w-full max-w-2xl px-6 py-12">
         <div className="flex flex-col items-center gap-3 text-center">
           <GooFaceIcon className="size-8 text-text-primary" />
-          <h1 className="text-xl font-semibold tracking-tight">MyGoo</h1>
+          <h1
+            style={{ ...pixel }}
+            className="text-5xl font-semibold tracking-tight"
+          >
+            My<span className="">Goo</span>
+          </h1>
         </div>
 
         <p className="mt-4 text-center text-sm text-neutral-400">
@@ -267,22 +283,22 @@ export default function MyGooPage() {
         <div className="mt-10 grid items-center justify-items-center gap-8 text-center sm:grid-cols-2">
           <div className="flex flex-col items-center">
             <h2 className="text-base font-medium">
-              MyGoo can now learn and grow on its own
+              Local Goo can now learn and grow on its own
             </h2>
             <p className="mt-3 max-w-sm text-xs leading-relaxed text-neutral-400">
               Goo keeps learning your preferences, habits, and ways of working,
               making every collaboration the start of the next one.
             </p>
             <LoadingButton
-              onAction={() => {}}
+              onAction={() => setBlinkSignal((signal) => signal + 1)}
               colors={{ success: "text-[#FF6D00]" }}
-              className={cn("mt-5 w-fit", buttonClass)}
+              className={cn("mt-5 max-h-9 w-fit")}
             >
               self-growth
             </LoadingButton>
           </div>
 
-          <GrowthFace />
+          <GrowthFace blinkSignal={blinkSignal} />
         </div>
       </div>
     </main>

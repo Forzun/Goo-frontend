@@ -1,7 +1,7 @@
 "use client";
 // beui.dev/components/agents/chat-app
 
-import { ArrowUp, Plus, Square } from "lucide-react";
+import { ArrowUp, Plus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type FormEvent,
@@ -28,6 +28,7 @@ import {
 } from "@/components/local/motion/select";
 import { SPRING_SWAP } from "@/lib/ease";
 import { cn } from "@/lib/utils";
+import { GooFaceIcon } from "./goo-face-icon";
 
 export interface PromptModel {
   value: string;
@@ -60,6 +61,8 @@ export interface PromptInputProps extends Omit<
   onSubmit?: (value: string, model?: string) => void | Promise<void>;
   loading?: boolean;
   onStop?: () => void;
+  requireModel?: boolean;
+  onModelRequired?: () => void;
   minRows?: number;
   maxRows?: number;
   leadingAction?: ReactNode;
@@ -79,6 +82,8 @@ export function PromptInput({
   onSubmit,
   loading = false,
   onStop,
+  requireModel = false,
+  onModelRequired,
   minRows = 2,
   maxRows = 8,
   leadingAction,
@@ -97,12 +102,15 @@ export function PromptInput({
     defaultModel ?? models[0]?.value,
   );
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [modelAttention, setModelAttention] = useState(false);
   const currentValue = value ?? internalValue;
   const currentModelValue = model ?? internalModel;
   const currentModel = models.find(
     (option) => option.value === currentModelValue,
   );
   const canSubmit = Boolean(currentValue.trim()) && !disabled && !loading;
+  const showModelAlert =
+    requireModel && modelAttention && !currentModelValue;
 
   const resizeTextarea = useCallback(() => {
     const textarea = textareaRef.current;
@@ -138,12 +146,20 @@ export function PromptInput({
   const setModel = (next: string) => {
     if (model === undefined) setInternalModel(next);
     onModelChange?.(next);
+    setModelAttention(false);
   };
 
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
     const prompt = currentValue.trim();
     if (!prompt || disabled || loading) return;
+
+    if (requireModel && !currentModelValue) {
+      setModelAttention(true);
+      onModelRequired?.();
+      textareaRef.current?.focus({ preventScroll: true });
+      return;
+    }
 
     onSubmit?.(prompt, currentModelValue);
     if (value === undefined) setInternalValue("");
@@ -301,13 +317,22 @@ export function PromptInput({
           type={loading ? "button" : "submit"}
           size="icon"
           disabled={loading ? !onStop : !canSubmit}
-          aria-label={loading ? "Stop generating" : "Send prompt"}
+          aria-label={
+            loading
+              ? "Stop generating"
+              : showModelAlert
+                ? "Select a model first"
+                : "Send prompt"
+          }
           onClick={loading ? onStop : undefined}
-          className="ml-auto size-8 rounded-full"
+          className={cn(
+            "ml-auto size-8 rounded-full",
+            showModelAlert && "bg-destructive hover:bg-destructive/90",
+          )}
         >
           <AnimatePresence initial={false} mode="popLayout">
             <motion.span
-              key={loading ? "stop" : "send"}
+              key={loading ? "stop" : showModelAlert ? "model" : "send"}
               initial={reduce ? { opacity: 1 } : { opacity: 0, y: 3, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, y: -3, scale: 0.8 }}
@@ -315,7 +340,9 @@ export function PromptInput({
               className="grid place-items-center"
             >
               {loading ? (
-                <Square className="size-3 fill-current" />
+                <GooFaceIcon className="size-8" />
+              ) : showModelAlert ? (
+                <GooFaceIcon className="size-8 text-destructive" />
               ) : (
                 <ArrowUp className="size-4" />
               )}

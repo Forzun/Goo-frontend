@@ -14,24 +14,30 @@ const buttonClass =
   "rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-900 transition-colors hover:bg-white"
 
 const ACTIVITY_CACHE_KEY = "localgoo:daily-activity"
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
-function readCachedActivity(): DailyActivity[] {
+function readCachedActivity(): DailyActivity[] | null {
   try {
     const raw = window.localStorage.getItem(ACTIVITY_CACHE_KEY)
-    if (!raw) return []
+
+    if (raw === null) return null
     const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
+    if (!Array.isArray(parsed)) return null
 
     return parsed.filter(
       (day): day is DailyActivity =>
         typeof day === "object" &&
         day !== null &&
         typeof day.date === "string" &&
+        DATE_KEY_PATTERN.test(day.date) &&
         typeof day.count === "number" &&
-        typeof day.level === "number"
+        Number.isFinite(day.count) &&
+        typeof day.level === "number" &&
+        day.level >= 0 &&
+        day.level <= 4
     )
   } catch {
-    return []
+    return null
   }
 }
 
@@ -103,7 +109,7 @@ export default function MyGooPage() {
     Promise.resolve().then(() => {
       if (cancelled) return
       const cached = readCachedActivity()
-      if (cached.length) setActivity(cached)
+      if (cached?.length) setActivity(cached)
     })
 
     const restore = workspaceFs.hasWorkspace()
@@ -116,7 +122,7 @@ export default function MyGooPage() {
         return readDailyActivity(workspaceFs)
       })
       .then((data) => {
-        if (cancelled || !data) return
+        if (cancelled || !data || data.length === 0) return
         setActivity(data)
         cacheActivity(data)
       })
@@ -156,8 +162,6 @@ export default function MyGooPage() {
 
     return { totalChats, streak, daysTogether }
   }, [activity])
-
-  console.log(activity)
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">

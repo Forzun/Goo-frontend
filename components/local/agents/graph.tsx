@@ -1,8 +1,15 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  cloneElement,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactElement,
+} from "react"
 import { ActivityCalendar } from "react-activity-calendar"
-import "react-activity-calendar/tooltips.css"
 
 import { cn } from "@/lib/utils"
 
@@ -42,6 +49,14 @@ function activityTooltip(activity: { date: string; count: number }) {
   return `${date} · ${activity.count} total ${
     activity.count === 1 ? "message" : "messages"
   } with AI`
+}
+
+function renderActivityBlock(block: ReactElement, activity: DailyActivity) {
+  return cloneElement(block as ReactElement<Record<string, unknown>>, {
+    "data-activity-date": activity.date,
+    "data-activity-count": activity.count,
+    "aria-label": activityTooltip(activity),
+  })
 }
 
 /**
@@ -109,7 +124,14 @@ export function DailyActivityGraph({
   }, [data, padToYear])
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useRef<HTMLElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+  const [tooltip, setTooltip] = useState<{
+    date: string
+    count: number
+    left: number
+    top: number
+  } | null>(null)
 
   useEffect(() => {
     const container = containerRef.current
@@ -146,10 +168,42 @@ export function DailyActivityGraph({
     }
   }, [normalizedData, containerWidth])
 
+  function handlePointerOver(event: ReactPointerEvent<HTMLElement>) {
+    const target = event.target
+    if (!(target instanceof Element)) return
+
+    const block = target.closest<Element>("[data-activity-date]")
+    const date = block?.getAttribute("data-activity-date")
+
+    if (!block || !date) {
+      setTooltip(null)
+      return
+    }
+
+    const section = sectionRef.current
+    if (!section) return
+
+    const count = Number(block.getAttribute("data-activity-count") ?? 0)
+    const blockRect = block.getBoundingClientRect()
+    const sectionRect = section.getBoundingClientRect()
+
+    setTooltip({
+      date,
+      count: Number.isFinite(count) ? count : 0,
+      left: blockRect.left - sectionRect.left + blockRect.width / 2,
+      top: blockRect.top - sectionRect.top,
+    })
+  }
+
   if (!normalizedData || normalizedData.length === 0) return null
 
   return (
-    <section className={cn("rounded-xl bg-[#121212] p-5", className)}>
+    <section
+      ref={sectionRef}
+      onPointerOver={handlePointerOver}
+      onPointerLeave={() => setTooltip(null)}
+      className={cn("relative rounded-xl bg-[#121212] p-5", className)}
+    >
       {/* <h3 className="text-sm font-medium text-neutral-200">Daily activity</h3>
 
       <p className="mt-1 mb-4 text-xs text-neutral-500">
@@ -175,15 +229,19 @@ export function DailyActivityGraph({
           fontSize={fontSize}
           showColorLegend={false}
           showTotalCount={false}
-          tooltips={{
-            activity: {
-              text: activityTooltip,
-              placement: "top",
-              withArrow: true,
-            },
-          }}
+          renderBlock={renderActivityBlock}
         />
       </div>
+
+      {tooltip ? (
+        <div
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[calc(100%+6px)] rounded bg-neutral-100 px-2 py-1 text-[13px] font-medium whitespace-nowrap text-neutral-900 shadow-lg"
+          style={{ left: tooltip.left, top: tooltip.top }}
+        >
+          {activityTooltip(tooltip)}
+          <span className="absolute top-full left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-neutral-100" />
+        </div>
+      ) : null}
     </section>
   )
 }

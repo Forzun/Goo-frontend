@@ -21,7 +21,6 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 
-
 RUN mkdir .next
 RUN chown bun:bun .next
 

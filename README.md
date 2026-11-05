@@ -1,92 +1,113 @@
-An open coding agent for your terminal, built by a community collective rather than a company. Bring your own model, keep your code on your machine, and owe nothing to anyone.
+# LocalGoo
 
-Built by the [Nano Collective](https://nanocollective.org), a community collective building AI tooling not for profit, but for the community. Nanocoder runs agentic coding on the model of your choice: local models via Ollama, or any OpenAI-compatible API such as OpenRouter, Anthropic, and Google. You decide which provider runs your code and where your data goes. No closed-source features and no paid tiers gating the useful parts: **privacy-respecting**, **local-first**, and **open for all**.
+> **[!NOTE]**
+> Please note that this project is under development but you can use it anyways 
 
-[![Typing SVG](https://readme-typing-svg.demolab.com/?lines=First+line+of+text;Second+line+of+text)](https://git.io/typing-svg)
+A local-first AI workspace that keeps your projects, conversations, and memory on your machine.
 
+Bring your own models, connect your own workspace, and let AI work with your project context. LocalGoo combines a browser-based workspace with local LLMs powered by Ollama, persistent conversation memory, and semantic search.
 
-![Example](./.github/assets/example-preview.gif)
+**Your workspace. Your models. Your data.**
 
-## Quick Start
+[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=&size=33&letterSpacing=large&pause=1000&color=8373F7&center=true&vCenter=true&width=1000&lines=LocalGoo;your+private+%2C+local+first+AI+coding+assistant)](https://git.io/typing-svg)
+
+![LocalGoo](./.github/assets/preview.png)
+
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh/)
+- [Ollama](https://ollama.com/)
+- A supported browser with File System Access API support.
+
+### Installation
+
+## Quick Installation use Docker (recomended)
+
+Build the Docker image:
 
 ```bash
-docker build -t local .
-````
-
-Also available via [Homebrew](docs/getting-started/installation.md#homebrew-macoslinux) and [Nix Flakes](docs/getting-started/installation.md#nix-flakes).
-
-### CLI Flags
-
-Specify provider, model, and starting mode directly:
-
-```bash
-# Non-interactive mode with specific provider/model
-nanocoder --provider openrouter --model google/gemini-3.1-flash run "analyze src/app.ts"
-
-# Interactive mode starting with specific provider
-nanocoder --provider ollama --model llama3.1
-
-# Flags can appear before or after 'run' command
-nanocoder run --provider openrouter "refactor database module"
-
-# Boot directly into a development mode (normal, auto-accept, yolo, plan)
-nanocoder --mode yolo
-nanocoder --mode plan run "audit the auth module"
-
-# Fullscreen mode with in-app scrolling instead of the inline default
-nanocoder --alt-screen
+docker build -t localgoo .
 ```
 
-### Screen Modes
+Run the container:
 
-Nanocoder supports two rendering modes, mirroring what Claude Code and Codex ship:
+```bash
+docker run -d \
+  --name Local \
+  -p 3000:3000 \
+  localgoo
+```
 
-- **Inline (default)** — renders on the main screen; finished messages print once into the terminal's native scrollback, so your terminal's scrollbar, mouse wheel, and search work as usual. The transcript stays in the terminal after you exit.
-- **Fullscreen** (`--alt-screen` flag, or `"alternateScreen": true` in preferences) — a fixed-height layout on the alternate screen buffer with in-app scrolling: mouse wheel and PgUp/PgDn, with a scroll indicator and automatic snap-back to bottom on new output. Mouse reporting takes click-drag selection away from the terminal, so **Ctrl+P** toggles selection mode to hand it back while you copy. `--no-alt-screen` forces inline mode even if the preference is set.
+Clone the repository:
 
-In both modes, `/clear` fully resets the terminal to a fresh welcome banner, and exiting (Ctrl+C or `/exit`) erases the input UI cleanly, leaving the transcript and a farewell instead of a dead input box.
+```bash
+git clone https://github.com/your-username/localgoo.git
+cd localgoo
+```
 
-## Documentation
+Install dependencies:
 
-Full documentation is available online at **[docs.nanocollective.org](https://docs.nanocollective.org/nanocoder/docs)** or in the [docs/](docs/) folder:
+```bash
+bun install
+```
 
-- **[Getting Started](docs/getting-started/index.md)** - Installation, setup, and first steps
-- **[Configuration](docs/configuration/index.md)** - AI providers, MCP servers, preferences, logging, timeouts
-- **[Features](docs/features/index.md)** - Skills (commands, subagents, tools, event triggers), the per-project daemon, checkpointing, development modes, task management, and more
-- **[Commands Reference](docs/features/commands.md)** - Complete list of built-in slash commands
-- **[Keyboard Shortcuts](docs/features/keyboard-shortcuts.md)** - Full shortcut reference
-- **[Community](docs/community.md)** - Contributing, Discord, and how to help
+Start the development server:
 
-## Why a collective
+```bash
+bun dev
+```
 
-Nanocoder is built by the Nano Collective rather than a company, and that shapes the tool itself. There are no paid tiers, no telemetry quietly shipping your prompts somewhere, and no roadmap steered by what monetises best — the people building it are the people using it. Building in the open as a collective means the harness stays multi-provider on principle: you are never locked to one vendor's model, and the conventions, tests, and release standards are shared across every Nano Collective project so the work stays legible and contributable.
+Open `http://localhost:3000` in your browser.
 
-It is also bigger than one tool. The collective is assembling an open ecosystem of AI tooling — see the [other projects](https://nanocollective.org) — and contributors who show up now help shape what that becomes.
+### Set Up Ollama
 
-## Sponsors
+Make sure Ollama is running locally:
 
-Nanocoder is built not for profit, but for the community, and that work is funded by sponsors. [Become one](https://nanocollective.org/sponsor).
+```bash
+ollama serve
+```
 
-### [Atlas Cloud](https://www.atlascloud.ai/console/coding-plan)
+Pull a model:
 
-<p>
-  <a href="https://www.atlascloud.ai/console/coding-plan" title="Atlas Cloud">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://nanocollective.org/sponsors/atlas-cloud-white.png">
-      <img alt="Atlas Cloud" height="40" src="https://nanocollective.org/sponsors/atlas-cloud-black.png">
-    </picture>
-  </a>
-</p>
+```bash
+ollama pull llama3.1
+```
 
-> Atlas Cloud is a full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities.
+For semantic memory search, pull an embedding model:
 
-Check out [Atlas Cloud's new coding plan promotion](https://www.atlascloud.ai/console/coding-plan) for more budget-friendly API access.
+```bash
+ollama pull nomic-embed-text
+```
 
-## Community
+Configure LocalGoo to use your preferred models.
 
-The Nano Collective is a community collective building AI tooling for the community, not for profit. We'd love your help.
+## How It Works
 
-- **Contribute**: See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
-- **The collective**: [nanocollective.org](https://nanocollective.org) · [docs](https://docs.nanocollective.org) · [GitHub](https://github.com/Nano-Collective) · [Discord](https://discord.gg/ktPDV6rekE)
-- **Support the work**: The [Support page](https://docs.nanocollective.org/collective/organisation/support) covers donations and sponsorship.
-- **Paid contribution**: The [Economics Charter](https://docs.nanocollective.org/collective/organisation/economics-charter) sets out how scoped paid bounties work.
+LocalGoo uses a workspace-based architecture.
+
+<!-- add image of architecture -->
+
+```text
+LocalGoo/
+├── user.md
+├── daily/
+├── projects/
+│   └── project-name/
+│       ├── memory.md
+│       ├── conversations/
+│       └── files/
+└── .localgoo/
+    ├── config.json
+    └── localgoo.db
+```
+## 🤝 Contributing
+
+Contributions, ideas, and feedback are welcome!
+
+If you're interested in building a more personal and local-first AI experience, feel free to contribute.
+
+## 📄 License
+
+Add your project's chosen open-source license here.

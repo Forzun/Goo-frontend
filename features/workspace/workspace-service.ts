@@ -15,6 +15,7 @@ import {
 } from "@/lib/memory/conversation-json";
 import { ulid } from "ulid";
 import type { Conversation, ConversationData, ConversationMessage, DailyNote, Project } from "@/types/workspace";
+import type { ConversationGraphData } from "@/types/graph";
 import { EmbeddingRepository } from "@/lib/embedding/embedding-repository";
 
 export class WorkspaceService {
@@ -184,6 +185,41 @@ export class WorkspaceService {
 
   listProjects(): Project[] {
     return this.projects.list();
+  }
+
+  getConversationGraph(): ConversationGraphData {
+    const nodes: ConversationGraphData["nodes"] = [];
+    const links: ConversationGraphData["links"] = [];
+
+    for (const project of this.projects.list()) {
+      const projectNodeId = `project:${project.id}`;
+      const conversations = this.conversations.listByProject(project.id);
+
+      nodes.push({
+        id: projectNodeId,
+        name: project.name,
+        kind: "project",
+        val: Math.max(1, conversations.length),
+        projectId: project.id,
+      });
+
+      for (const conversation of conversations) {
+        const messageCount = conversation.metaData.messageCount;
+
+        nodes.push({
+          id: conversation.id,
+          name: conversation.title,
+          kind: "conversation",
+          val: Math.max(1, messageCount),
+          projectId: project.id,
+          messageCount,
+        });
+
+        links.push({ source: projectNodeId, target: conversation.id });
+      }
+    }
+
+    return { nodes, links };
   }
 
   async createConversation(projectId: string, title: string): Promise<Conversation> {

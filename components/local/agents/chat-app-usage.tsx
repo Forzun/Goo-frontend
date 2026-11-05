@@ -702,7 +702,8 @@ export function ChatAppExample({
   const showWelcome = isBlankSlate && messages.length === 0 && !busy
   const hasPageContent =
     pathname?.startsWith("/local/myGoo") ||
-    pathname?.startsWith("/local/project")
+    pathname?.startsWith("/local/project") ||
+    pathname?.startsWith("/local/graph")
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>
@@ -770,7 +771,11 @@ export function ChatAppExample({
                     icon: GooFaceIcon,
                     action: () => router.push("/local/myGoo"),
                   },
-                  { label: "Runs", icon: Clock3 },
+                  {
+                    label: "Graph",
+                    icon: Clock3,
+                    action: () => router.push("/local/graph"),
+                  },
                 ].map(({ label, icon: Icon, active, badge, action }) => (
                   <AnimatedSidebarMenuItem key={label}>
                     <AnimatedSidebarMenuButton

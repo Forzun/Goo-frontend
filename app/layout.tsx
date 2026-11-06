@@ -37,7 +37,8 @@ export default function RootLayout({
         "font-sans",
         geist.variable,
         vt323.variable,
-        cormorant.variable
+        cormorant.variable,
+      	"selection:bg-orange-500/70 selection:text-white"
       )}
     >
       <body  suppressHydrationWarning>

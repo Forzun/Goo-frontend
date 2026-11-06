@@ -703,7 +703,8 @@ export function ChatAppExample({
   const hasPageContent =
     pathname?.startsWith("/local/myGoo") ||
     pathname?.startsWith("/local/project") ||
-    pathname?.startsWith("/local/graph")
+    pathname?.startsWith("/local/graph") ||
+    pathname?.startsWith("/local/search")
 
   return (
     <ChatApp sidebarWidth="17rem" className={cn("h-screen", className)}>

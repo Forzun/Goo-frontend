@@ -102,12 +102,12 @@ LocalGoo/
     ├── config.json
     └── localgoo.db
 ```
-## 🤝 Contributing
+## Contributing
 
 Contributions, ideas, and feedback are welcome!
 
 If you're interested in building a more personal and local-first AI experience, feel free to contribute.
 
-## 📄 License
+## License
 
 Add your project's chosen open-source license here.
